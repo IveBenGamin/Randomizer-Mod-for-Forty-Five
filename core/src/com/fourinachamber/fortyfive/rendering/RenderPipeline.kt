@@ -367,6 +367,14 @@ open class RenderPipeline(
         batch.shader = null
     }
 
+    fun addEarlyTask(task: () -> Unit) {
+        earlyTasks.add(task)
+    }
+
+    fun addEarlyBatchTask(task: (SpriteBatch) -> Unit) {
+        earlyTasks.add { task(batch) }
+    }
+
     fun addOrbAnimation(orbAnimation: OrbAnimation) {
         orbAnimation.startTime = TimeUtils.millis()
         orbAnimations.add(orbAnimation)

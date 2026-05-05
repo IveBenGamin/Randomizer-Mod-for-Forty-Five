@@ -4,10 +4,12 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.Event
 import com.badlogic.gdx.utils.TimeUtils
 import com.fourinachamber.fortyfive.FortyFive
+import com.fourinachamber.fortyfive.archipelago.APClient
 import com.fourinachamber.fortyfive.game.PermaSaveState
 import com.fourinachamber.fortyfive.game.SaveState
 import com.fourinachamber.fortyfive.screen.SoundPlayer
 import com.fourinachamber.fortyfive.screen.general.*
+import com.fourinachamber.fortyfive.screen.general.customActor.CustomInputField
 import com.fourinachamber.fortyfive.screen.general.customActor.OffSettable
 import com.fourinachamber.fortyfive.utils.TemplateString
 import com.fourinachamber.fortyfive.utils.Timeline
@@ -29,6 +31,24 @@ class TitleScreenController : ScreenController() {
             "title_screen.startButtonText",
             if (SaveState.playerCompletedFirstTutorialEncounter) "Continue" else "Start your Journey"
         )
+        TemplateString.updateGlobalParam("title_screen.apConnectionError", "")
+        APClient.pendingAutoConnect?.let { pending ->
+            APClient.consumePendingAutoConnect()
+            (screen.namedActorOrError("ap_address_field") as? CustomInputField)?.setText(pending.host)
+            (screen.namedActorOrError("ap_slot_name_field") as? CustomInputField)?.setText(pending.slot)
+            (screen.namedActorOrError("ap_password_field") as? CustomInputField)?.setText(pending.password ?: "")
+            APClient.connectionResultCallback = { success, errorMessage ->
+                if (!success) {
+                    TemplateString.updateGlobalParam(
+                        "title_screen.apConnectionError",
+                        "Auto-connect failed: $errorMessage"
+                    )
+                    screen.enterState(showAPConnectionErrorState)
+                    screen.enterState(showAPConnectionPopupScreenState)
+                }
+            }
+            APClient.connect(pending.host, pending.slot, pending.password)
+        }
         if (!PermaSaveState.hasSeenInDevPopup) timeline.appendAction(Timeline.timeline {
             action {
                 screen.enterState(showInDevelopmentReminder)
@@ -93,6 +113,32 @@ class TitleScreenController : ScreenController() {
             isConfirmed = true
         }
 
+        is StartGameEvent -> {
+            FortyFive.changeToInitialScreen()
+        }
+
+
+        is APConnectEvent -> {
+            val address = (screen.namedActorOrError("ap_address_field") as CustomInputField).text.toString()
+            val slotName = (screen.namedActorOrError("ap_slot_name_field") as CustomInputField).text.toString()
+            val password = (screen.namedActorOrError("ap_password_field") as CustomInputField).text.toString().takeIf { it.isNotBlank() }
+            screen.leaveState(showAPConnectionErrorState)
+            APClient.connectionResultCallback = { success, errorMessage ->
+                if (showAPConnectionPopupScreenState in screen.screenState) {
+                    if (success) {
+                        screen.leaveState(showAPConnectionPopupScreenState)
+                    } else {
+                        TemplateString.updateGlobalParam(
+                            "title_screen.apConnectionError",
+                            "Failed to connect: $errorMessage"
+                        )
+                        screen.enterState(showAPConnectionErrorState)
+                    }
+                }
+            }
+            APClient.connect(address, slotName, password)
+        }
+
         else -> {}
 
     }
@@ -131,6 +177,9 @@ class TitleScreenController : ScreenController() {
     companion object {
         const val showConfirmationPopupScreenState = "show_confirmation_popup"
         const val showInDevelopmentReminder = "show_in_development_reminder"
+        const val showAPConnectionPopupScreenState = "show_ap_connection_popup"
+        const val showAPConnectionErrorState = "show_ap_connection_error"
+        const val showNotConnectedPopupScreenState = "show_not_connected_popup"
     }
 
 }

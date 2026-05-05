@@ -27,6 +27,7 @@ class ChooseCardDragSource(
     override fun dragStart(event: InputEvent?, x: Float, y: Float, pointer: Int): DragAndDrop.Payload {
         val actor = this.actor
         actor.isDragged = true
+        CenteredDragSource.isDragging = true
         val payload = DragAndDrop.Payload()
         dragAndDrop.setKeepWithinStage(false)
         payload.dragActor = actor

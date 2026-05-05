@@ -1,6 +1,9 @@
 package com.fourinachamber.fortyfive.map.events
 
 import com.badlogic.gdx.Gdx
+import com.fourinachamber.fortyfive.archipelago.APCardPool
+import com.fourinachamber.fortyfive.archipelago.APClient
+import com.fourinachamber.fortyfive.game.PermaSaveState
 import com.fourinachamber.fortyfive.game.SaveState
 import com.fourinachamber.fortyfive.game.card.Card
 import com.fourinachamber.fortyfive.game.card.CardPrototype
@@ -113,9 +116,10 @@ object RandomCardSelection {
         biome: String,
         occasion: String, // TODO: could be an enum
         unique: Boolean = false,
-        cards: List<CardPrototype> = allCardPrototypes,
+        cards: List<CardPrototype>? = null,
     ): List<CardPrototype> {
-        val newCards = doCardRarities(cards)
+        val effectiveCards = cards ?: if (APClient.isArchipelago) APCardPool.allCards else allCardPrototypes
+        val newCards = doCardRarities(effectiveCards)
         val (tempCards, tempChances) = getCardsWithChances(newCards.toMutableList(), typeNames, biome, occasion)
         return getCardsFromChances(nbrOfCards, tempCards, tempChances, rnd, unique)
     }
@@ -124,14 +128,18 @@ object RandomCardSelection {
         val newCards = mutableListOf<CardPrototype>()
         // .toSet() to eliminate duplicate cards
         cards.toSet().forEach { card ->
-            val tag = card.tags.find { it in cardMaximums.keys }
-            if (tag == null) {
-                newCards.add(card)
-                return@forEach
+            if (APClient.isArchipelago) {
+                if (card.name in PermaSaveState.apItemLocations) newCards.add(card)
+            } else {
+                val tag = card.tags.find { it in cardMaximums.keys }
+                if (tag == null) {
+                    newCards.add(card)
+                    return@forEach
+                }
+                val ownedAmount = SaveState.cards.count { it == card.name }
+                val maxAmount = (cardMaximums[tag]!! - ownedAmount).coerceAtLeast(0)
+                repeat(maxAmount) { newCards.add(card.copy()) }
             }
-            val ownedAmount = SaveState.cards.count { it == card.name }
-            val maxAmount = (cardMaximums[tag]!! - ownedAmount).coerceAtLeast(0)
-            repeat(maxAmount) { newCards.add(card.copy()) }
         }
         return newCards
     }

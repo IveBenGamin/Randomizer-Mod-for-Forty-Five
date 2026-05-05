@@ -122,6 +122,7 @@ $Widget {
         backgroundTexture?: string,
         align?: string,
         wrap?: boolean,
+        maxLength?: int,
         partOfSelectionHierarchy?: boolean,
         ...widgetSharedKeys
     }

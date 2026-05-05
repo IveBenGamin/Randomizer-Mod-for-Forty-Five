@@ -118,7 +118,7 @@ class ChooseCardScreenController(onj: OnjObject) : ScreenController() {
                 screen,
                 curCard.actor
             )
-            curCard.actor.name = curCard.name
+            curCard.actor.name = cardPrototypes[i].name
         }
     }
 
@@ -163,7 +163,7 @@ class ChooseCardScreenController(onj: OnjObject) : ScreenController() {
     fun getCard(card: String, addToDeck: Boolean) {
         FortyFiveLogger.debug(logTag, "Chose card: $card")
         SaveState.buyCard(card)
-        if (addToDeck) SaveState.curDeck.addToDeck(SaveState.curDeck.nextFreeSlot(), card)
+        if (addToDeck) SaveState.curDeck.addToDeckFromShop(SaveState.curDeck.nextFreeSlot(), card)
         context.completed()
         SaveState.write()
         MapManager.changeToMapScreen()

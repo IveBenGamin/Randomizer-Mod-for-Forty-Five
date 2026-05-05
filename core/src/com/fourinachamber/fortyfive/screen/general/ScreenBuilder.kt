@@ -411,6 +411,7 @@ class ScreenBuilder(val file: FileHandle) {
             widgetOnj.ifHas<String>("backgroundTexture") { backgroundHandle = it }
             widgetOnj.ifHas<String>("align") { setAlignment(alignmentOrError(it)) }
             widgetOnj.ifHas<Boolean>("wrap") { wrap = it }
+            widgetOnj.ifHas<Long>("maxLength") { maxLength = it.toInt() }
         }
 
         "CardHand" -> CardHand(

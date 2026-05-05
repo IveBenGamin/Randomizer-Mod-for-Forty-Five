@@ -86,7 +86,7 @@ nodes: [
         ],
         nodeTexture: "map_node_choose_card",
         event: $ChooseCardMapEvent {
-            types: ["tutorial_only_silver_bullet"],
+            forceCards: ["silverBullet"],
             seed: 0,
             nbrOfCards: 1,
             currentlyBlocks: true,
@@ -118,7 +118,7 @@ nodes: [
         ],
         nodeTexture: "map_node_choose_card",
         event: $ChooseCardMapEvent {
-            types: ["tutorial_only_worker_bullet"],
+            forceCards: ["workerBullet"],
             seed: 0,
             nbrOfCards: 1,
             currentlyBlocks: true,

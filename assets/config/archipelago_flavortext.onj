@@ -1,0 +1,11 @@
+use Common;
+
+apFlavourTexts: [
+    "It smells funny.",
+    "A bullet from another dimension.",
+    "I don't know what this is, but it sounds cool.",
+    "\"Only for use with Archipelagun$^$TM$^$\" -Manufacturer's note",
+    "This one floats."
+    "I wonder what \"HK\" means."
+    "A code engraved on it reads \"417263686970656C61676F.\""
+]

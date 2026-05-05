@@ -1,0 +1,195 @@
+import "imports/colors.onj" as color;
+import "screens/input_maps.onj" as inputMaps;
+import "screens/shared_components.onj" as sharedComponents;
+
+use Common;
+use Screen;
+use Style;
+
+var worldWidth = 1600.0;
+var worldHeight = 900.0;
+
+assets: {
+    useAssets: [
+        "shop_background_wasteland",
+        "transparent_black_texture",
+        "hover_detail_background", "red_wing_cm", "red_wing", "red_wing_bmp",
+        "heal_or_max_accept",
+        "heal_or_max_accept_hover",
+        "max_health_background",
+        "heal_or_max_add_max_health",
+        "map_node_heal",
+        "taupe_gray_rounded",
+        "button_2_sound",
+        "money_sound",
+        "map_theme",
+        ...(sharedComponents.ambientSoundsUsedAssets),
+        ...(sharedComponents.backpackAssets),
+        ...(sharedComponents.navBarUsedAssets),
+        ...(sharedComponents.warningLabelUsedAssets),
+    ]
+},
+
+viewport: $FitViewport {
+    worldWidth: worldWidth,
+    worldHeight: worldHeight
+},
+
+options: {
+    background: "hover_detail_background",
+    transitionAwayTime: 1.5,
+    music: "map_theme",
+    playAmbientSounds: true,
+    inputMap: [
+        ...(inputMaps.defaultInputMap),
+        ...(inputMaps.addMaxHPInputMap),
+    ],
+    screenController: $APHealthCheckScreenController {
+    }
+},
+
+root: $Box {
+
+    styles: [
+        {
+            width: 100.0#percent,
+            height: 100.0#percent,
+            background: "shop_background_wasteland",
+        }
+    ]
+} children [
+    $Image {
+        scaleX: 1.0,
+        scaleY: 1.0,
+        textureName: "transparent_black_texture",
+        styles: [
+            {
+                width: 100#percent,
+                height: 100#percent,
+            }
+        ],
+    },
+    $Box {
+        zIndex: 150,
+        styles: [
+            {
+                positionType: positionType.absolute,
+                positionTop: 20#percent,
+                positionLeft: 31.0#percent,
+                width: (38)#percent,
+                height: 60#percent,
+                flexDirection: flexDirection.column,
+                background: "max_health_background",
+                paddingTop: 23#percent,
+                alignItems: align.center,
+            }
+        ],
+    } children [
+        $Label {
+            text: "Archipelago Check!",
+            font: "red_wing_cm",
+            color: color.dark_brown,
+            fontScale: 1.0,
+            align: "center",
+        },
+        $Box {
+            styles: [
+                {
+                    width: 70#percent,
+                    height: 63#percent,
+                    flexDirection: flexDirection.column,
+                    justifyContent: justify.center,
+                    alignItems: align.center,
+                },
+            ],
+            children: [
+                $Image {
+                    reportDimensionsWithScaling: true,
+                    textureName: "heal_or_max_add_max_health",
+                    scaleX: 0.9,
+                    scaleY: 0.9,
+                },
+                $Label {
+                    text: "Location check sent!",
+                    font: "red_wing_cm",
+                    color: color.dark_brown,
+                    fontScale: 0.9,
+                    align: "center",
+                    styles: [
+                        {
+                            marginTop: 5#percent,
+                        }
+                    ],
+                },
+            ],
+        },
+        $Box {
+            name: "acceptButton",
+            behaviours: [
+                $OnClickSelectHealOrMaxOptionBehaviour {
+                    state: "valid"
+                },
+                sharedComponents.buttonSoundBehaviour,
+                sharedComponents.buttonCursorBehaviour,
+            ],
+            actorStates: [
+                "valid"
+            ],
+            styles: [
+                {
+                    style_priority: 1,
+                    marginTop: 1.0#percent,
+                    width: 23.0#percent,
+                    height: 10.0#percent,
+                    touchable: touchable.enabled,
+                    background: "heal_or_max_accept"
+                },
+                {
+                    style_priority: 2,
+                    background: "heal_or_max_accept_hover",
+                    style_condition: hover(),
+                }
+            ],
+        },
+    ],
+    $Image {
+        textureName: "map_node_heal",
+        zIndex: 160,
+        scaleX: 1.0,
+        scaleY: 1.0,
+        styles: [
+            {
+                positionType: positionType.absolute,
+                positionTop: 24#percent,
+                positionLeft: 47.15#percent,
+            }
+        ],
+    },
+    $Statusbar {
+        zIndex: 400,
+        options: [
+            {
+                actorName: "backpackActor",
+                displayName: "Backpack",
+            },
+            {
+                actionName: "toTitleScreen",
+                displayName: "To Title Screen",
+            },
+            {
+                actorName: "settings_widget",
+                displayName: "Settings"
+            }
+        ],
+        ...(sharedComponents.statusbarCenterDefaults)
+    },
+    sharedComponents.backpack,
+    ...(sharedComponents.settingsWidgets),
+    sharedComponents.warningParent,
+],
+
+templates: [
+    ...(sharedComponents.statusBarTemplates),
+    ...(sharedComponents.backpackTemplates),
+    ...(sharedComponents.warningLabelTemplates),
+],

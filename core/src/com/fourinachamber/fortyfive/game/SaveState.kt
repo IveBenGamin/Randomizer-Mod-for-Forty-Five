@@ -1,6 +1,11 @@
 package com.fourinachamber.fortyfive.game
 
 import com.badlogic.gdx.Gdx
+import com.fourinachamber.fortyfive.FortyFive
+import com.fourinachamber.fortyfive.archipelago.APCardPool
+import com.fourinachamber.fortyfive.archipelago.APClient
+import com.fourinachamber.fortyfive.archipelago.ItemsAndLocations
+import com.fourinachamber.fortyfive.map.events.RandomCardSelection
 import com.fourinachamber.fortyfive.utils.FortyFiveLogger
 import com.fourinachamber.fortyfive.utils.templateParam
 import onj.builder.buildOnjObject
@@ -35,6 +40,14 @@ object SaveState {
     const val defaultSavefilePath: String = "saves/default_savefile.onj"
 
     private var _cards: MutableList<String> = mutableListOf()
+
+    private var _queue: MutableList<String> = mutableListOf()
+
+    private val _obtainableCards by lazy {
+        RandomCardSelection.allCardPrototypes
+            .filter { "not used" !in it.tags && "unobtainable" !in it.tags }
+            .sortedBy { it.name.lowercase() }
+    }
 
     val cards: List<String>
         get() = _cards
@@ -282,8 +295,38 @@ object SaveState {
     }
 
     fun buyCard(card: String) {
-        _cards.add(card)
+        if (APClient.isArchipelago) {
+            if (card.endsWith("R")) {
+                queueCard(APCardPool.trueCardName(card))
+                PermaSaveState.apItemLocations.remove(card)
+                PermaSaveState.write()
+            } else {
+                val locationId = ItemsAndLocations.LOCATIONS[APCardPool.archipelagoTitle(card)]
+                if (locationId != null) {
+                    APClient.locationManager.checkLocation(locationId)
+                    PermaSaveState.apItemLocations.remove(card)
+                    PermaSaveState.write()
+                } else {
+                    queueCard(card)
+                }
+            }
+        } else {
+            queueCard(card)
+        }
         savefileDirty = true
+    }
+
+    fun queueCard(card: String) {
+        if (FortyFive.currentGame != null)
+            _queue.add(card)
+        else
+            _cards.add(card)
+        savefileDirty = true
+    }
+
+    fun dumpQueue() {
+        _cards += _queue
+        _queue.clear()
     }
 
     fun extract() {
@@ -392,9 +435,17 @@ object SaveState {
         }
 
         fun addToDeck(index: Int, name: String) {
-            if (index >= 0) {
+            if (index >= 0 && RandomCardSelection.allCardPrototypes.any { it.name == name }) {
                 _cardPositions[index] = name
                 savefileDirty = true
+            }
+        }
+
+        fun addToDeckFromShop(index: Int, name: String) {
+            when {
+                name.endsWith("R") -> addToDeck(index, APCardPool.trueCardName(name))
+                APCardPool.cardsByName.containsKey(name) -> { }
+                else -> addToDeck(index, name)
             }
         }
 

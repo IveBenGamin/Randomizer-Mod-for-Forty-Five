@@ -37,6 +37,7 @@ open class CardDragSource(
         if (!card.isDraggable) return null
 
         card.actor.isDragged = true
+        CenteredDragSource.isDragging = true
         val payload = Payload()
         dragAndDrop.setKeepWithinStage(false)
 

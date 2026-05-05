@@ -100,4 +100,12 @@ defaultTextEffects:[
         indicator:"$dmgNerf$",
         color: color.red,
     },
+    $FontScale {
+        indicator: "$^$",
+        fontScale: 0.30,
+    },
+    $Action {
+        indicator: "$^$",
+        action: $SuperscriptAction {},
+    },
 ]

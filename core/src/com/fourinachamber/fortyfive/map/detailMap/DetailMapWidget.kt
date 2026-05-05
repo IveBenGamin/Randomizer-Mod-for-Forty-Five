@@ -2,6 +2,7 @@ package com.fourinachamber.fortyfive.map.detailMap
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.g2d.Batch
+import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector2
@@ -132,6 +133,9 @@ class DetailMapWidget(
     private val directionIndicator: TextureRegion by lazy {
         ResourceManager.get(screen, directionIndicatorHandle)
     }
+
+
+    private val glyphLayout: GlyphLayout = GlyphLayout()
 
     private var moveScreenToPoint: Vector2? = null
 
@@ -613,7 +617,9 @@ class DetailMapWidget(
             val drawable = node.getNodeTexture(screen) ?: nodeDrawable
             drawable.draw(batch, x + nodeX, y + nodeY, nodeSize, nodeSize)
         }
-        val (grayNodes, normalNodes) = uniqueNodes.splitInTwo { it.event?.canBeStarted?.not() ?: false }
+        val (grayNodes, normalNodes) = uniqueNodes.splitInTwo { node ->
+            node.event?.canBeStarted?.not() ?: false && node.event?.getLockedNodeTexture() == null
+        }
         batch.flush()
         shader.shader.bind()
         shader.prepare(screen)
@@ -675,6 +681,7 @@ class DetailMapWidget(
         const val eventCanBeStartedScreenState: String = "canStartEvent"
         const val noEncounterModifierScreenState: String = "noEncounterModifier"
         const val logTag = "Map"
+
     }
 
 }

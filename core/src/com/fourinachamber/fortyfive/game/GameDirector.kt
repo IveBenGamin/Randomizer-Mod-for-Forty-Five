@@ -5,6 +5,7 @@ import com.badlogic.gdx.math.Vector2
 import com.fourinachamber.fortyfive.game.enemy.Enemy
 import com.fourinachamber.fortyfive.game.enemy.EnemyAction
 import com.fourinachamber.fortyfive.game.enemy.NextEnemyAction
+import com.fourinachamber.fortyfive.archipelago.APClient
 import com.fourinachamber.fortyfive.map.detailMap.DetailMap
 import com.fourinachamber.fortyfive.map.detailMap.EncounterMapEvent
 import com.fourinachamber.fortyfive.utils.*
@@ -85,6 +86,7 @@ class GameDirector(private val controller: GameController) {
         val forceCards: List<String>?,
         val shuffleCards: Boolean,
         val special: Boolean,
+        val apOnly: Boolean,
         val tutorialTextParts: List<GameTutorialTextPart>
     ) {
 
@@ -144,6 +146,7 @@ class GameDirector(private val controller: GameController) {
                     obj.getOr<OnjArray?>("forceCards", null)?.value?.map { it.value as String },
                     obj.getOr("shuffleCards", true),
                     obj.getOr("special", false),
+                    obj.getOr("apOnly", false),
                     obj.getOr<OnjArray?>("tutorialText", null)
                         ?.value
                         ?.map { GameTutorialTextPart.fromOnj(it as OnjObject) }
@@ -173,7 +176,7 @@ class GameDirector(private val controller: GameController) {
 
         private fun chooseEncounter(map: DetailMap, progress: ClosedFloatingPointRange<Float>): Int {
             val biome = map.biome
-            val encounters = encounters.filter { !it.special }
+            val encounters = encounters.filter { !it.special && (!it.apOnly || APClient.isArchipelago) }
             if (encounters.isEmpty()) throw RuntimeException("no encounters are defined")
             val encountersInBiome = encounters.filter { biome in it.biomes }
             if (encountersInBiome.isEmpty()) {

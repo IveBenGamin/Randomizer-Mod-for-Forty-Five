@@ -391,6 +391,10 @@ open class OnjScreen @MainThreadOnly constructor(
         enterState(transitionAwayScreenState)
     }
 
+    fun disableInput() {
+        inputMultiplexer.clear()
+    }
+
     @MainThreadOnly
     override fun hide() {
         super.hide()

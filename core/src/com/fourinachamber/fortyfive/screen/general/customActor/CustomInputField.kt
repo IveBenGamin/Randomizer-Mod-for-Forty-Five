@@ -73,7 +73,7 @@ open class CustomInputField(
     var maxLength = -1
         set(value) {
             field = value
-            setText(text.toString().substringTillEnd(0, value))
+            setText(text.toString().take(value))
         }
     private var focused = false
     val selectionRect = CustomRectangle(Color(0F, 0F, 1F, 0.7F))
@@ -718,6 +718,7 @@ open class CustomInputField(
         val pos = localToStageCoordinates(Vector2())
         val ySize = glyphLayout.height * 1.2F
         val yPosCursor = pos.y + (height - ySize) / 2
+
         if (hasSelection) {
             selectionRect.setPosition(pos.x + glyphPositions.get(max(selectionStart, 0)), yPosCursor)
             selectionRect.setSize(

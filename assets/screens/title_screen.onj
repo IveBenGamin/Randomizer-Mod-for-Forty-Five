@@ -32,6 +32,7 @@ assets: {
 
         "common_popup_background_black_large",
         "common_button_default", "common_button_hover",
+        "common_button_disabled",
 
         "main_theme",
         "swoosh_sound", "button_2_sound",
@@ -299,6 +300,260 @@ var inDevelopmentPopup = $Box {
 
 ];
 
+var apConnectionPopup = $Box {
+    zIndex: 100,
+    styles: [
+        {
+            style_priority: 1,
+            width: worldWidth#points,
+            height: worldHeight#points,
+            positionType: positionType.absolute,
+            alignItems: align.center,
+            justifyContent: justify.center,
+            detached: true,
+        },
+        {
+            style_priority: 2,
+            style_condition: state("show_ap_connection_popup"),
+            detached: false,
+        }
+    ],
+    touchable: "enabled"
+} children [
+    $Box {
+        styles: [
+            {
+                width: 900#points,
+                height: 540#points,
+                flexDirection: flexDirection.column,
+                alignItems: align.center,
+                justifyContent: justify.center,
+                background: "common_popup_background_black_large",
+            }
+        ],
+    } children [
+        $Label {
+            font: "roadgeek",
+            fontScale: 1.2,
+            color: color.forty_white,
+            text: "Connect to Archipelago",
+            styles: [ { marginBottom: 10#points } ],
+        },
+        $TemplateLabel {
+            font: "roadgeek",
+            fontScale: 0.8,
+            color: color.hemoglobin_red,
+            template: "{title_screen.apConnectionError}",
+            align: "center",
+            wrap: true,
+            styles: [
+                {
+                    style_priority: 1,
+                    width: 600#points,
+                    marginBottom: 10#points,
+                    alpha: 0.0,
+                },
+                {
+                    style_priority: 2,
+                    style_condition: state("show_ap_connection_error"),
+                    alpha: 1.0,
+                }
+            ]
+        },
+        $Box {
+            styles: [ { flexDirection: flexDirection.row, alignItems: align.center, marginBottom: 20#points } ]
+        } children [
+            $Label { font: "roadgeek", fontScale: 1.0, color: color.forty_white, text: "Address:", styles: [ { width: 160#points } ] },
+            $Box {
+                styles: [ { width: 400#points, background: "common_button_disabled", paddingLeft: 25#points, marginLeft: -30#points } ]
+            } children [
+                $InputField {
+                    name: "ap_address_field",
+                    text: "localhost:38281",
+                    font: "roadgeek",
+                    color: color.forty_white,
+                    maxLength: 40,
+                    styles: [ { disabled: false } ]
+                }
+            ]
+        ],
+        $Box {
+            styles: [ { flexDirection: flexDirection.row, alignItems: align.center, marginBottom: 20#points } ]
+        } children [
+            $Label { font: "roadgeek", fontScale: 1.0, color: color.forty_white, text: "Slot Name:", styles: [ { width: 160#points } ] },
+            $Box {
+                styles: [ { width: 400#points, background: "common_button_disabled", paddingLeft: 25#points, marginLeft: -30#points } ]
+            } children [
+                $InputField {
+                    name: "ap_slot_name_field",
+                    text: "",
+                    font: "roadgeek",
+                    color: color.forty_white,
+                    maxLength: 40,
+                    styles: [ { disabled: false } ]
+                }
+            ]
+        ],
+        $Box {
+            styles: [ { flexDirection: flexDirection.row, alignItems: align.center, marginBottom: 30#points } ]
+        } children [
+            $Label { font: "roadgeek", fontScale: 1.0, color: color.forty_white, text: "Password:", styles: [ { width: 160#points } ] },
+            $Box {
+                styles: [ { width: 400#points, background: "common_button_disabled", paddingLeft: 25#points, marginLeft: -30#points } ]
+            } children [
+                $InputField {
+                    name: "ap_password_field",
+                    text: "",
+                    font: "roadgeek",
+                    color: color.forty_white,
+                    maxLength: 40,
+                    styles: [ { disabled: false } ]
+                }
+            ]
+        ],
+        $Box {
+            styles: [ { flexDirection: flexDirection.row } ]
+        } children [
+            $Box {
+                styles: [
+                    { style_priority: 1, background: "common_button_default", width: 150#points, height: 60#points, alignItems: align.center, justifyContent: justify.center },
+                    { style_priority: 2, style_condition: hover(), background: "common_button_hover" },
+                ],
+            } children [
+                $Label {
+                    font: "roadgeek",
+                    text: "Cancel",
+                    fontScale: 1.0,
+                    color: color.white,
+                    behaviours: [
+                        sharedComponents.buttonSoundBehaviour,
+                        sharedComponents.buttonCursorBehaviour,
+                        $OnClickChangeScreenStateBehaviour {
+                            state: "show_ap_connection_popup",
+                            enter: false
+                        }
+                    ]
+                }
+            ],
+            $Box {
+                styles: [
+                    { style_priority: 1, background: "common_button_default", width: 150#points, height: 60#points, marginLeft: 10#points, alignItems: align.center, justifyContent: justify.center },
+                    { style_priority: 2, style_condition: hover(), background: "common_button_hover" },
+                ],
+            } children [
+                $Label {
+                    font: "roadgeek",
+                    text: "Connect",
+                    fontScale: 1.0,
+                    color: color.white,
+                    behaviours: [
+                        sharedComponents.buttonSoundBehaviour,
+                        sharedComponents.buttonCursorBehaviour,
+                        $CatchEventAndEmitBehaviour {
+                            catch: "ButtonClickEvent",
+                            emit: "APConnectEvent"
+                        }
+                    ]
+                }
+            ],
+        ]
+    ]
+];
+
+var notConnectedPopup = $Box {
+    zIndex: 100,
+    styles: [
+        {
+            style_priority: 1,
+            width: worldWidth#points,
+            height: worldHeight#points,
+            positionType: positionType.absolute,
+            alignItems: align.center,
+            justifyContent: justify.center,
+            detached: true,
+        },
+        {
+            style_priority: 2,
+            style_condition: state("show_not_connected_popup"),
+            detached: false,
+        }
+    ],
+    touchable: "enabled"
+} children [
+
+    $Box {
+        styles: [
+            {
+                width: 1_100#points,
+                aspectRatio: 698.0 / 390.0,
+                flexDirection: flexDirection.column,
+                alignItems: align.center,
+                justifyContent: justify.center,
+                background: "common_popup_background_black_large"
+            }
+        ],
+    } children [
+
+        $Label {
+            styles: [
+                {
+                    width: 500#points
+                },
+            ],
+            font: "roadgeek",
+            fontScale: 1.0,
+            color: color.forty_white,
+            wrap: true,
+            align: "center",
+            text: "You must be connected to an Archipelago server before starting a run.",
+        },
+
+        $Box {
+            styles: [
+                {
+                    flexDirection: flexDirection.row,
+                    marginTop: 30#points,
+                }
+            ]
+        } children [
+            $Box {
+                styles: [
+                    {
+                        style_priority: 1,
+                        background: "common_button_default",
+                        width: 150#points,
+                        height: 60#points,
+                        alignItems: align.center,
+                        justifyContent: justify.center
+                    },
+                    {
+                        style_priority: 2,
+                        style_condition: hover(),
+                        background: "common_button_hover",
+                    },
+                ],
+            } children [
+                $Label {
+                    font: "roadgeek",
+                    text: "OK",
+                    fontScale: 1.0,
+                    color: color.white,
+                    behaviours: [
+                        sharedComponents.buttonSoundBehaviour,
+                        sharedComponents.buttonCursorBehaviour,
+                        $OnClickChangeScreenStateBehaviour {
+                            state: "show_not_connected_popup",
+                            enter: false
+                        }
+                    ]
+                }
+            ],
+        ]
+
+    ]
+
+];
+
 root: $Box {
 
     styles: [
@@ -312,6 +567,8 @@ root: $Box {
 
     inDevelopmentPopup,
     confirmationPopup,
+    apConnectionPopup,
+    notConnectedPopup,
 
     $Box {
         styles: [
@@ -342,7 +599,11 @@ root: $Box {
             template: "{title_screen.startButtonText}",
             behaviours: [
                 sharedComponents.buttonCursorBehaviour,
-                $OnClickChangeToInitialScreenBehaviour { }
+                //$OnClickChangeToInitialScreenBehaviour { },
+                $CatchEventAndEmitBehaviour {
+                    catch: "ButtonClickEvent",
+                    emit: "StartGameEvent"
+                }
             ]
         },
         $Label {
@@ -416,6 +677,31 @@ root: $Box {
                 sharedComponents.buttonCursorBehaviour,
                 $OnClickChangeScreenBehaviour {
                     screenPath: "screens/credits_screen.onj",
+                }
+            ]
+        },
+        $Label {
+            styles: [
+                {
+                    style_priority: 1,
+                    underline: false,
+                    marginTop: 10#points,
+                },
+                {
+                    style_priority: 2,
+                    style_condition: hover(),
+                    underline: true,
+                },
+            ],
+            font: "roadgeek",
+            fontScale: 1.6,
+            color: color.black,
+            text: "Archipelago",
+            behaviours: [
+                sharedComponents.buttonCursorBehaviour,
+                $OnClickChangeScreenStateBehaviour {
+                    state: "show_ap_connection_popup",
+                    enter: true
                 }
             ]
         },

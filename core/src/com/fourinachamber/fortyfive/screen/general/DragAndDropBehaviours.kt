@@ -142,6 +142,10 @@ abstract class CenteredDragSource(
     showClickHint: Boolean = false
 ) : DragBehaviour(dragAndDrop, actor, onj) {
 
+    companion object {
+        var isDragging: Boolean = false
+    }
+
     val centerOnClick = OnClickToCenter(this)
 
     init {
@@ -195,6 +199,7 @@ open class ExecutionPayload { //TODO maybe interface, but idk how to set "tasks"
      * called when the drag is stopped
      */
     fun onDragStop() {
+        CenteredDragSource.isDragging = false
         for (task in tasks) task()
     }
 

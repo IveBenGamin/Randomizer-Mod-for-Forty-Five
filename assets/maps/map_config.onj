@@ -118,6 +118,7 @@ screens: {
     chooseCardScreen: "screens/choose_card_screen.onj",
     changeToHealOrMaxHPScreen: "screens/heal_or_max_screen.onj",
     changeToAddMaxHPScreen: "screens/add_max_hp_screen.onj",
+    apHealthCheckScreen: "screens/ap_health_check_screen.onj",
     titleScreen: "screens/title_screen.onj",
     creditsScreen: "screens/credits_screen.onj",
 },

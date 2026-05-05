@@ -17,6 +17,7 @@ var encounter = {
     forceCards?: string[],
     special?: boolean,
     shuffleCards?: boolean,
+    apOnly?: boolean,
     tutorialText?: tutorialText[],
 };
 

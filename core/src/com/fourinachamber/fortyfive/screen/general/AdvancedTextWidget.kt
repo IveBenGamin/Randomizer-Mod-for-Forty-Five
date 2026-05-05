@@ -360,6 +360,9 @@ class IconAdvancedTextPart(
 object AdvancedTextPartActionFactory {
 
     private val actions: Map<String, (onj: OnjObject) -> AdvancedTextPart.() -> Unit> = mapOf(
+        "SuperscriptAction" to { _ ->
+            { offsetY = (0.6*actor.height).toFloat() }
+        },
         "ShakeTextAction" to { onj ->
             val xSpeed = onj.get<Double>("xSpeed").toFloat()
             val xMagnitude = onj.get<Double>("xMagnitude").toFloat()

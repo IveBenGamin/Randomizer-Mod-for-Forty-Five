@@ -351,6 +351,10 @@ textures: [
         file: "textures/map/nodes/exit.png"
     },
     {
+        name: "map_node_exit_locked",
+        file: "textures/map/nodes/exit_locked.png"
+    },
+    {
         name: "map_node_fight",
         file: "textures/map/nodes/fight.png"
     },

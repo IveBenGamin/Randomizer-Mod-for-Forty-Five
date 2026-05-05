@@ -24,6 +24,7 @@ data class MapNode(
 
     private var imageCache: Drawable? = null
     private var nodeTextureCache: Drawable? = null
+    private var lockedNodeTextureCache: Drawable? = null
     private var nodePositionsForDirection: List<MapNode?> = listOf()
 
     fun getEdge(dir: Direction): MapNode? {
@@ -121,6 +122,11 @@ data class MapNode(
 
     @MainThreadOnly
     fun getNodeTexture(screen: OnjScreen): Drawable? {
+        val lockedHandle = event?.getLockedNodeTexture()
+        if (lockedHandle != null && event?.canBeStarted == false) {
+            if (lockedNodeTextureCache == null) lockedNodeTextureCache = ResourceManager.get(screen, lockedHandle)
+            return lockedNodeTextureCache
+        }
         if (nodeTexture == null) return null
         if (nodeTextureCache != null) return nodeTextureCache
         nodeTextureCache = ResourceManager.get(screen, nodeTexture)
@@ -130,6 +136,7 @@ data class MapNode(
     fun invalidateCachedAssets() {
         imageCache = null
         nodeTextureCache = null
+        lockedNodeTextureCache = null
     }
 
     fun getImageData(): MapManager.MapImageData? =

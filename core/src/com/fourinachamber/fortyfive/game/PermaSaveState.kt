@@ -1,6 +1,7 @@
 package com.fourinachamber.fortyfive.game
 
 import com.badlogic.gdx.Gdx
+import com.fourinachamber.fortyfive.archipelago.APClient
 import com.fourinachamber.fortyfive.utils.FortyFiveLogger
 import com.fourinachamber.fortyfive.utils.templateParam
 import onj.builder.buildOnjObject
@@ -18,6 +19,7 @@ object PermaSaveState {
     const val logTag = "PermaSaveState"
     const val saveFilePath: String = "saves/perma_savefile.onj"
     const val defaultSaveFilePath: String = "saves/default_perma_savefile.onj"
+    const val apCacheDefaultSaveFilePath: String = "saves/APCache/default_perma_savefile.onj"
 
     private val savefileSchema: OnjSchema by lazy {
         OnjSchemaParser.parseFile(Gdx.files.internal("onjschemas/perma_savefile.onjschema").file())
@@ -26,6 +28,30 @@ object PermaSaveState {
     private var saveFileDirty: Boolean = false
 
     private var currentRandom: Long = 0
+
+    var apItemLocations: MutableList<String> = mutableListOf()
+        set(value) {
+            field = value
+            saveFileDirty = true
+        }
+
+    var apSeed: Long? = null
+        set(value) {
+            field = value
+            saveFileDirty = true
+        }
+
+    var lastReceivedItemIndex: Int = -1
+        set(value) {
+            field = value
+            saveFileDirty = true
+        }
+
+    var townsUnlockedCount: Int = 0
+        set(value) {
+            field = value
+            saveFileDirty = true
+        }
 
     var collection: List<String> = mutableListOf()
         set(value) {
@@ -100,6 +126,11 @@ object PermaSaveState {
         playerFoughtMultipleEnemies = obj.get<Boolean>("playerFoughtMultipleEnemies")
         hasSeenInDevPopup = obj.getOr("hasSeenInDevPopup", false)
         _visitedAreas = obj.get<OnjArray>("visitedAreas").value.map { it.value as String }.toMutableSet()
+        apItemLocations = obj.getOr<OnjArray?>("apItemLocations", null)
+            ?.value?.map { it.value as String }?.toMutableList()
+            ?: mutableListOf()
+        lastReceivedItemIndex = obj.getOr<Long?>("lastReceivedItemIndex", null)?.toInt() ?: -1
+        townsUnlockedCount = obj.getOr<Long?>("townsUnlockedCount", null)?.toInt() ?: 0
 
         saveFileDirty = false
     }
@@ -120,6 +151,9 @@ object PermaSaveState {
             "visitedAreas" with _visitedAreas
             "playerFoughtMultipleEnemies" with playerFoughtMultipleEnemies
             "hasSeenInDevPopup" with hasSeenInDevPopup
+            "apItemLocations" with apItemLocations
+            "lastReceivedItemIndex" with lastReceivedItemIndex
+            "townsUnlockedCount" with townsUnlockedCount
         }
         Gdx.files.local(saveFilePath).file().writeText(obj.toString())
         saveFileDirty = false
@@ -144,7 +178,8 @@ object PermaSaveState {
 
     private fun copyDefaultFile() {
         FortyFiveLogger.debug(logTag, "copying default perma save")
-        Gdx.files.local(defaultSaveFilePath).copyTo(Gdx.files.local(saveFilePath))
+        val source = if (APClient.isArchipelago) apCacheDefaultSaveFilePath else defaultSaveFilePath
+        Gdx.files.local(source).copyTo(Gdx.files.local(saveFilePath))
     }
 
 }

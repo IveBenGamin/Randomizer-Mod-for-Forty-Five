@@ -23,6 +23,7 @@ class ShopDragSource(
         val actor = this.actor
         if ((actor !is CardActor) || actor.inActorState("unbuyable")) return null
         if (!canBeStarted(actor, x, y)) return null
+        CenteredDragSource.isDragging = true
         val payload = DragAndDrop.Payload()
         dragAndDrop.setKeepWithinStage(false)
 

@@ -150,6 +150,21 @@ object MapManager {
         FortyFive.changeToScreen(screenPaths["changeToAddMaxHPScreen"]!!, event)
     }
 
+    // TODO: DEV — remove this block before release
+    fun devOpenShopScreen() {
+        FortyFive.changeToScreen(screenPaths["shopScreen"]!!, ShopMapEvent(emptySet(), "traveling_merchant", 0L, mutableSetOf()))
+    }
+
+    // TODO: DEV — remove this method before release
+    fun devOpenRoadMap(roadName: String) {
+        val map = lookupMapFile(roadName)
+        currentMapFile = map
+        currentDetailMap = readDetailMap(map)
+        SaveState.currentNode = 0
+        SaveState.lastNode = null
+        changeToMapScreen()
+    }
+
     fun changeToTitleScreen() {
         FortyFive.changeToScreen(screenPaths["titleScreen"]!!)
     }

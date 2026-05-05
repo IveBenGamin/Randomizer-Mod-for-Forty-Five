@@ -1,0 +1,13 @@
+version: 0,
+lastRandom: 6598052769581360733,
+collection: [
+    'bullet',
+    'bullet',
+    'bullet',
+    'bigBullet',
+],
+playerHasCompletedTutorial: false,
+visitedAreas: [
+],
+playerFoughtMultipleEnemies: false,
+hasSeenInDevPopup: false,

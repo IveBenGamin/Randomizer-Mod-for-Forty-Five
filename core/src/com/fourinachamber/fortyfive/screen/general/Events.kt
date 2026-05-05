@@ -21,6 +21,8 @@ object EventFactory {
         "QuitGameEvent" to { QuitGameEvent() },
         "AbandonRunEvent" to { AbandonRunEvent() },
         "ResetGameEvent" to { ResetGameEvent() },
+        "APConnectEvent" to { APConnectEvent() },
+        "StartGameEvent" to { StartGameEvent() },
     )
 
     private val eventClasses: Map<String, KClass<out Event>> = mapOf(
@@ -36,6 +38,8 @@ object EventFactory {
         "QuitGameEvent" to QuitGameEvent::class,
         "AbandonRunEvent" to AbandonRunEvent::class,
         "ResetGameEvent" to ResetGameEvent::class,
+        "APConnectEvent" to APConnectEvent::class,
+        "StartGameEvent" to StartGameEvent::class,
     )
 
     fun createEvent(name: String): Event = eventCreators[name]?.invoke()
@@ -85,6 +89,8 @@ class TutorialConfirmedEvent : Event()
 class QuitGameEvent : Event()
 class AbandonRunEvent : Event()
 class ResetGameEvent : Event()
+class APConnectEvent : Event()
+class StartGameEvent : Event()
 
 /**
  * used by the [GameController][com.fourinachamber.fortyfive.game.GameController] so it knows when the player confirmed

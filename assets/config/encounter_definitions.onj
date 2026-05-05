@@ -1075,4 +1075,23 @@ encounter: [
 //        ],
 //        weight: 100
 //    },
+
+    //Boss for Archipelago
+
+    {
+        enemies: [
+            "Outlaw_lvl2", "Pyro_lvl1", "Witch_lvl1"
+        ],
+        encounterModifier: [
+            "SteelNerves"
+        ],
+        biomes: [
+            "bewitched_forest"
+        ],
+        progress: [
+            99.0, 100.0
+        ],
+        weight: 100,
+        apOnly: true
+    }
 ]

@@ -6,6 +6,8 @@ import com.badlogic.gdx.scenes.scene2d.Actor
 import com.badlogic.gdx.scenes.scene2d.Event
 import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop
 import com.badlogic.gdx.utils.TimeUtils
+import com.fourinachamber.fortyfive.archipelago.APClient
+import com.fourinachamber.fortyfive.archipelago.ItemsAndLocations
 import com.fourinachamber.fortyfive.FortyFive
 import com.fourinachamber.fortyfive.game.card.Card
 import com.fourinachamber.fortyfive.game.card.CardPrototype
@@ -16,6 +18,7 @@ import com.fourinachamber.fortyfive.map.MapManager
 import com.fourinachamber.fortyfive.map.events.chooseCard.ChooseCardScreenContext
 import com.fourinachamber.fortyfive.rendering.BetterShader
 import com.fourinachamber.fortyfive.rendering.GameRenderPipeline
+import com.fourinachamber.fortyfive.rendering.NotificationOverlay
 import com.fourinachamber.fortyfive.rendering.RenderPipeline
 import com.fourinachamber.fortyfive.screen.ResourceHandle
 import com.fourinachamber.fortyfive.screen.ResourceManager
@@ -25,6 +28,7 @@ import com.fourinachamber.fortyfive.screen.general.*
 import com.fourinachamber.fortyfive.screen.general.customActor.CustomWarningParent
 import com.fourinachamber.fortyfive.utils.*
 import dev.lyze.flexbox.FlexBox
+import io.github.archipelagomw.flags.NetworkItem as NetworkItemFlags
 import ktx.actors.onClick
 import onj.parser.OnjParser
 import onj.parser.OnjSchemaParser
@@ -210,6 +214,7 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
         FortyFive.currentGame = this
         gameRenderPipeline = GameRenderPipeline(onjScreen)
         FortyFive.useRenderPipeline(gameRenderPipeline)
+        NotificationOverlay.addToRenderPipeline(gameRenderPipeline, onjScreen)
         onjScreen.background = GraphicsConfig.encounterBackgroundFor(MapManager.currentDetailMap.biome)
         FortyFiveLogger.title("game starting")
 
@@ -997,6 +1002,10 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
             }
             include(bannerAnimationTimeline("enemy_turn_banner"))
             include(gameDirector.checkActions())
+            includeLater(
+                { processPendingTraps() },
+                { ItemsAndLocations.pendingTraps.isNotEmpty() }
+            )
             include(executePlayerStatusEffectsOnNewTurn())
             action {
                 gameDirector.chooseEnemyActions()
@@ -1182,6 +1191,21 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
         .enemies
         .map { it.executeStatusEffectsAfterTurn() }
         .collectTimeline()
+
+    private fun applyTrapTimeline(trapName: String): Timeline = Timeline.timeline {
+        when (trapName) {
+            "Hot Potato Trap" -> include(tryToPutCardsInHandTimeline("scorchingBullet"))
+            "Bewitching Trap" -> include(rotateRevolver(RevolverRotation.Left(1)))
+            "Bewitched Trap" -> action { applyStatusEffectToPlayer(Bewitched((2..3).random(), (3..5).random(), false)) }
+            "Burning Trap" -> action { applyStatusEffectToPlayer(BurningPlayer((3..6).random(), 0.5f, false, false)) }
+        }
+    }
+
+    private fun processPendingTraps(): Timeline = Timeline.timeline {
+        val traps = ItemsAndLocations.pendingTraps.toList()
+        ItemsAndLocations.pendingTraps.clear()
+        traps.forEach { include(applyTrapTimeline(it)) }
+    }
 
     fun applyStatusEffectToPlayer(effect: StatusEffect) {
         FortyFiveLogger.debug(logTag, "status effect $effect applied to player")
@@ -1400,6 +1424,7 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
         gameDirector.end()
         FortyFiveLogger.title("game ends")
         FortyFive.currentGame = null
+        SaveState.dumpQueue()
     }
 
     /**
@@ -1410,6 +1435,21 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
         enemy.onDefeat()
         enemyArea.onEnemyDefeated()
         SaveState.enemiesDefeated++
+        ItemsAndLocations.LOCATIONS["${SaveState.enemiesDefeated} Enemies Defeated"]?.let {
+            APClient.locationManager.checkLocation(it)
+            val info = APClient.scoutedLocations[it]
+            if(info != null) {
+                val classification = when {
+                    info.flags and NetworkItemFlags.ADVANCEMENT != 0 -> "Progression"
+                    info.flags and NetworkItemFlags.USEFUL != 0 -> "Useful"
+                    info.flags and NetworkItemFlags.TRAP != 0 -> "Trap"
+                    else -> "Filler"
+                }
+                if (info.playerName != APClient.myName) {
+                    NotificationOverlay.show("Sent ${info.itemName} to ${info.playerName} ($classification)")
+                }
+            }
+        }
         if (enemyArea.enemies.all { it.isDefeated }) hasWon = true
         FortyFiveLogger.debug(logTag, "player won")
     }
@@ -1426,6 +1466,9 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
                 if (money > 0) curScreen.enterState(showCashItem)
                 TemplateString.updateGlobalParam("game.overkillCash", money)
                 if (playerGetsCard) curScreen.enterState(showCardItem)
+                if (APClient.isArchipelago && SaveState.currentMap.contains("spire_outpost")) {
+                    APClient.sendGoalComplete()
+                }
             }
             delayUntil { popupEvent != null }
             action {
@@ -1473,10 +1516,22 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
     }
 
     @MainThreadOnly
-    fun playerDeathTimeline(): Timeline = Timeline.timeline {
+    fun receiveDeathLink() {
+        if (playerLost) return
+        curPlayerLives = 0
+        mainTimeline.appendAction(playerDeathTimeline(causedByDeathLink = true).asAction())
+    }
+
+    @MainThreadOnly
+    fun playerDeathTimeline(causedByDeathLink: Boolean = false): Timeline = Timeline.timeline {
+        delayUntil { createdCards.none { it.actor.isDragged } }
         action {
             FortyFiveLogger.debug(logTag, "player lost")
             playerLost = true
+            curScreen.disableInput()
+            if (APClient.deathLinkEnabled && !causedByDeathLink) {
+                APClient.sendDeathlink(APClient.myName, "${APClient.myName} ran out of bullets, and out of chances")
+            }
         }
         include(gameRenderPipeline.getFadeToBlackTimeline(2000, stayBlack = true))
         delay(500)

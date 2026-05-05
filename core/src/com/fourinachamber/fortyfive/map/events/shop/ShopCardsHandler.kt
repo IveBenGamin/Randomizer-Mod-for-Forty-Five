@@ -24,6 +24,7 @@ class ShopCardsHandler(
 
     private val cardWidgets: MutableList<CardActor> = mutableListOf()
     private val cards: MutableList<Card> = mutableListOf()
+    private val prototypes: MutableList<CardPrototype> = mutableListOf()
     private val labels: MutableList<CustomLabel> = mutableListOf()
 
     fun addItems(rnd: Random, contextTypes: Set<String>, defaultType: String) {
@@ -38,11 +39,12 @@ class ShopCardsHandler(
             "shop",
             unique = true
         )
-        cards.addAll(cardsToAdd.map { it.create(screen) })
-        cards.shuffle(rnd)
-        cards.forEach {
-            addCard(it)
-            screen.addDisposable(it)
+        val pairs = cardsToAdd.map { proto -> proto to proto.create(screen) }.shuffled(rnd)
+        pairs.forEach { (proto, card) ->
+            prototypes.add(proto)
+            cards.add(card)
+            addCard(card)
+            screen.addDisposable(card)
         }
         updateCards()
     }
@@ -84,12 +86,13 @@ class ShopCardsHandler(
         val i = cardWidgets.indexOf(cardImg)
         if (i !in boughtIndices) boughtIndices.add(i)
         val card = cards[i]
+        val prototypeName = prototypes[i].name
         SaveState.payMoney(card.price)
         SoundPlayer.situation("card_bought", screen)
         updateCards()
-        FortyFiveLogger.debug(logTag, "Bought ${card.name} for a price of ${card.price}")
-        SaveState.buyCard(card.name)
-        if (addToDeck) SaveState.curDeck.addToDeck(SaveState.curDeck.nextFreeSlot(), card.name)
+        FortyFiveLogger.debug(logTag, "Bought $prototypeName for a price of ${card.price}")
+        SaveState.buyCard(prototypeName)
+        if (addToDeck) SaveState.curDeck.addToDeckFromShop(SaveState.curDeck.nextFreeSlot(), prototypeName)
     }
 
     private fun updateCards() {

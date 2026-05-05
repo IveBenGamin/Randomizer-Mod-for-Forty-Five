@@ -1,9 +1,11 @@
 package com.fourinachamber.fortyfive.map.detailMap
 
+import com.fourinachamber.fortyfive.archipelago.APClient
 import com.fourinachamber.fortyfive.game.GameController
 import com.fourinachamber.fortyfive.game.PermaSaveState
 import com.fourinachamber.fortyfive.game.SaveState
 import com.fourinachamber.fortyfive.map.MapManager
+import com.fourinachamber.fortyfive.screen.ResourceHandle
 import com.fourinachamber.fortyfive.map.events.chooseCard.ChooseCardScreenContext
 import com.fourinachamber.fortyfive.utils.FortyFiveLogger
 import com.fourinachamber.fortyfive.utils.toIntRange
@@ -114,6 +116,11 @@ abstract class MapEvent {
     open val displayName: String = ""
 
     /**
+     * when non-null, this texture is used instead of the node's normal texture while canBeStarted is false
+     */
+    open fun getLockedNodeTexture(): ResourceHandle? = null
+
+    /**
      * called when the start button was clicked
      */
     abstract fun start()
@@ -220,7 +227,16 @@ class EncounterMapEvent(obj: OnjObject) : MapEvent(), GameController.EncounterCo
 class EnterMapMapEvent(val targetMap: String) : MapEvent() {
 
     override var currentlyBlocks: Boolean = false
-    override var canBeStarted: Boolean = true
+
+    override var canBeStarted: Boolean
+        get() {
+            if (!APClient.isArchipelago) return true
+            val townIndex = TOWN_UNLOCK_ORDER.indexOf(targetMap)
+            if (townIndex == -1) return true
+            return PermaSaveState.townsUnlockedCount > townIndex
+        }
+        protected set(_) {}
+
     override var isCompleted: Boolean = false
     override val displayDescription: Boolean = true
 
@@ -234,6 +250,8 @@ class EnterMapMapEvent(val targetMap: String) : MapEvent() {
         "Have fun exploring ${MapManager.displayName(targetMap)}"
     }
 
+    override fun getLockedNodeTexture(): ResourceHandle = "map_node_exit_locked"
+
     override fun start() {
         MapManager.changeToMap(targetMap)
     }
@@ -241,6 +259,10 @@ class EnterMapMapEvent(val targetMap: String) : MapEvent() {
     override fun asOnjObject(): OnjObject = buildOnjObject {
         name("EnterMapMapEvent")
         "targetMap" with targetMap
+    }
+
+    companion object {
+        val TOWN_UNLOCK_ORDER = listOf("aqua_balle", "tabu_letter_outpost", "salem", "spire_outpost")
     }
 
 }
@@ -345,9 +367,10 @@ class ChooseCardMapEvent(
 
     override val displayDescription: Boolean = true
 
-    override val types: List<String> = onj.get<OnjArray>("types").value.map { (it as OnjString).value }
+    override val types: List<String> = onj.getOr<OnjArray?>("types", null)?.value?.map { (it as OnjString).value } ?: emptyList()
     override val seed: Long = onj.get<Long?>("seed") ?: (Math.random() * 1000).toLong()
     override val nbrOfCards: Int = onj.get<Long>("nbrOfCards").toInt()
+    override val forceCards: List<String>? = onj.getOr<OnjArray?>("forceCards", null)?.value?.map { (it as OnjString).value }
 
     override val forwardToScreen: String = MapManager.mapScreenPath
 
@@ -375,6 +398,7 @@ class ChooseCardMapEvent(
         ("types" with types)
         ("seed" with seed)
         ("nbrOfCards" with nbrOfCards)
+        forceCards?.let { "forceCards" with it }
     }
 }
 
@@ -466,14 +490,25 @@ class FinishTutorialMapEvent(
 ) : MapEvent() {
 
     override var currentlyBlocks: Boolean = false
-    override var canBeStarted: Boolean = true
+
+    private val goToMap: String = onj.get<String>("goToMap")
+
+    override var canBeStarted: Boolean
+        get() {
+            if (!APClient.isArchipelago) return true
+            val townIndex = EnterMapMapEvent.TOWN_UNLOCK_ORDER.indexOf(goToMap)
+            if (townIndex == -1) return true
+            return PermaSaveState.townsUnlockedCount > townIndex
+        }
+        protected set(_) {}
+
     override var isCompleted: Boolean = false
     override val displayDescription: Boolean = true
 
     override val displayName: String = "Exit"
     override val descriptionText: String = "Start your Journey"
 
-    private val goToMap: String = onj.get<String>("goToMap")
+    override fun getLockedNodeTexture(): ResourceHandle = "map_node_exit_locked"
 
     override fun start() {
         SaveState.playerLives = SaveState.maxPlayerLives

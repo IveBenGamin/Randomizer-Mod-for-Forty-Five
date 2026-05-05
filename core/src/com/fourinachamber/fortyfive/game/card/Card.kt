@@ -53,6 +53,7 @@ class CardPrototype(
 ) {
 
     var creator: ((screen: OnjScreen, isSaved: Boolean?, areHoverDetailsEnabled: Boolean) -> Card)? = null
+    var drawableHandle: String? = null
 
     private val priceModifiers: MutableList<(Int) -> Int>  = mutableListOf()
 
@@ -74,6 +75,7 @@ class CardPrototype(
     fun copy(): CardPrototype = CardPrototype(name, title, type, tags, forceLoadCards).apply {
         this.priceModifiers.addAll(this@CardPrototype.priceModifiers)
         this.creator = this@CardPrototype.creator
+        this.drawableHandle = this@CardPrototype.drawableHandle
     }
 
 }
@@ -94,8 +96,8 @@ class Card(
     val name: String,
     val title: String,
     val drawableHandle: ResourceHandle,
-    val flavourText: String,
-    val shortDescription: String,
+    var flavourText: String,
+    var shortDescription: String,
     val type: Type,
     var baseDamage: Int,
     var cost: Int,
@@ -197,7 +199,7 @@ class Card(
     var lastEffectAffectedCardsCache: List<Card> = listOf()
 
     init {
-        screen.borrowResource(cardTexturePrefix + name)
+        screen.borrowResource(drawableHandle)
         // there is a weird race condition where the ServiceThread attempts to access card.actor for drawing the
         // card texture while the constructor is running and actor is not yet assigned
         synchronized(this) {
@@ -562,7 +564,7 @@ class Card(
             val card = Card(
                 name = name,
                 title = onj.get<String>("title"),
-                drawableHandle = "$cardTexturePrefix$name",
+                drawableHandle = prototype.drawableHandle ?: "$cardTexturePrefix$name",
                 flavourText = onj.get<String>("flavourText"),
                 shortDescription = onj.get<String>("description"),
                 type = cardTypeOrError(onj),

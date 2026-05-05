@@ -1379,6 +1379,7 @@ var mainCardHoverDetailBox = $Box {
                         fontScale: 0.5,
                         color: color.white
                     },
+                    effects: [],
                 },
             ]
         }
@@ -1391,6 +1392,7 @@ var cardHoverDetail = $Box {
         "children.1.children.1.children.0.rawText": "description",
         "children.1.children.1.children.0.effects": "effects",
         "children.1.children.1.children.1.children.1.children.0.rawText": "flavorText",
+        "children.1.children.1.children.1.children.1.children.0.effects": "effects",
     },
     width: cardHoverDetailTotalWidth,
 } children [

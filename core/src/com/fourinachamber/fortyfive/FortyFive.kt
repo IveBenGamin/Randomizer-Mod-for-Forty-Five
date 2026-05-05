@@ -3,10 +3,13 @@ package com.fourinachamber.fortyfive
 import com.badlogic.gdx.Game
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.glutils.ShaderProgram
+import com.fourinachamber.fortyfive.archipelago.APCardPool
+import com.fourinachamber.fortyfive.archipelago.APClient
 import com.fourinachamber.fortyfive.game.*
 import com.fourinachamber.fortyfive.map.*
 import com.fourinachamber.fortyfive.map.events.RandomCardSelection
 import com.fourinachamber.fortyfive.onjNamespaces.*
+import com.fourinachamber.fortyfive.rendering.NotificationOverlay
 import com.fourinachamber.fortyfive.rendering.RenderPipeline
 import com.fourinachamber.fortyfive.screen.general.OnjScreen
 import com.fourinachamber.fortyfive.screen.general.ScreenBuilder
@@ -37,6 +40,18 @@ object FortyFive : Game() {
     var cleanExit: Boolean = true
 
     private var inScreenTransition: Boolean = false
+
+    private var fullyInitialized: Boolean = false
+
+    private val globalTimelines: MutableList<Timeline> = mutableListOf()
+
+    fun runGlobalTimeline(timeline: Timeline) {
+        globalTimelines.add(timeline.also { it.startTimeline() })
+    }
+
+    fun disableCurrentScreenInput() {
+        currentScreen?.disableInput()
+    }
 
     private val tutorialEncounterContext = object : GameController.EncounterContext {
 
@@ -73,6 +88,12 @@ object FortyFive : Game() {
         val screen = currentScreen
         currentScreen?.update(Gdx.graphics.deltaTime)
         if (screen !== currentScreen) currentScreen?.update(Gdx.graphics.deltaTime)
+        val globalIterator = globalTimelines.iterator()
+        while (globalIterator.hasNext()) {
+            val t = globalIterator.next()
+            t.updateTimeline()
+            if (t.isFinished) globalIterator.remove()
+        }
         currentRenderPipeline?.render(Gdx.graphics.deltaTime)
     }
 
@@ -94,6 +115,7 @@ object FortyFive : Game() {
             currentRenderPipeline?.dispose()
             currentRenderPipeline = RenderPipeline(screen, screen).also {
                 it.showFps = currentRenderPipeline?.showFps ?: false
+                NotificationOverlay.addToRenderPipeline(it, screen)
             }
             setScreen(screen)
             // TODO: not 100% clean, this function is sometimes called when it isn't necessary
@@ -121,6 +143,28 @@ object FortyFive : Game() {
         FortyFiveLogger.title("newRun called; forwardToLooseScreen = $forwardToLooseScreen")
         PermaSaveState.newRun()
         if (forwardToLooseScreen) SaveState.copyStats()
+
+        if (APClient.isArchipelago) {
+            val collectionCounts = PermaSaveState.collection.groupingBy { it }.eachCount().toMutableMap()
+            val defaultsRemaining = mutableMapOf("bullet" to 3, "bigBullet" to 1)
+            for (card in SaveState.cards) {
+                val remaining = collectionCounts.getOrDefault(card, 0)
+                if (remaining > 0) {
+                    collectionCounts[card] = remaining - 1
+                } else {
+                    val defaultRemaining = defaultsRemaining.getOrDefault(card, 0)
+                    if (defaultRemaining > 0) {
+                        defaultsRemaining[card] = defaultRemaining - 1
+                    } else {
+                        var n = 1
+                        while ("${card}${n}R" in PermaSaveState.apItemLocations) n++
+                        PermaSaveState.apItemLocations.add("${card}${n}R")
+                    }
+                }
+            }
+            PermaSaveState.write()
+        }
+
         SaveState.reset()
         MapManager.newRunSync()
         if (forwardToLooseScreen) changeToScreen("screens/loose_screen.onj")
@@ -136,10 +180,14 @@ object FortyFive : Game() {
         SaveState.reset()
         MapManager.resetAllSync()
         UserPrefs.reset()
+        if (APClient.isArchipelago && fullyInitialized && PermaSaveState.apItemLocations.isEmpty()) {
+            PermaSaveState.apItemLocations = APCardPool.cards.map { it.name }.toMutableList()
+        }
         newRun(false)
     }
 
     private fun init() {
+        APClient.init()
         ShaderProgram.pedantic = false
         with(OnjConfig) {
             registerNameSpace("Common", CommonNamespace)
@@ -169,6 +217,7 @@ object FortyFive : Game() {
         serviceThread.start()
         serviceThread.sendMessage(ServiceThreadMessage.PrepareCards(true))
         RandomCardSelection.init()
+        fullyInitialized = true
 
 //        resetAll()
 //        newRun()
@@ -202,10 +251,12 @@ object FortyFive : Game() {
         PermaSaveState.write()
         SaveState.write()
         UserPrefs.write()
+        if (APClient.isArchipelago) APClient.swapSaveFiles()
         currentScreen?.dispose()
         serviceThread.close()
         ResourceManager.trimPrepared()
         ResourceManager.end()
+        NotificationOverlay.dispose()
         super.dispose()
     }
 }
