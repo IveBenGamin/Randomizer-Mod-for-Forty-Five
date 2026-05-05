@@ -12,6 +12,7 @@ import com.fourinachamber.fortyfive.rendering.NotificationOverlay
 import io.github.archipelagomw.Client
 import io.github.archipelagomw.ClientStatus
 import io.github.archipelagomw.Print.APPrintJsonType
+import io.github.archipelagomw.flags.ItemsHandling
 import io.github.archipelagomw.events.ArchipelagoEventListener
 import io.github.archipelagomw.events.ConnectionResultEvent
 import io.github.archipelagomw.events.DeathLinkEvent
@@ -31,6 +32,7 @@ object APClient : Client() {
     private const val CONNECT_FILENAME = "forty-five-ap-connect.txt"
     private val AP_SAVE_FILES = listOf("savefile.onj", "perma_savefile.onj", "user_prefs.onj")
 
+    @Volatile
     var isArchipelago: Boolean = false
         private set
 
@@ -49,8 +51,9 @@ object APClient : Client() {
 
     fun init() {
         isArchipelago = false
-        setGame(GAME_NAME)
-        getEventManager().registerListener(this)
+        game = GAME_NAME
+        itemsHandlingFlags = ItemsHandling.SEND_ITEMS or ItemsHandling.SEND_OWN_ITEMS or ItemsHandling.SEND_STARTING_INVENTORY
+        eventManager.registerListener(this)
         checkConnectFile()
     }
 
@@ -112,16 +115,20 @@ object APClient : Client() {
                 else -> false
             }
             FortyFiveLogger.debug(logTag, "connected to Archipelago as slot ${event.slot}")
+            val firstConnect = !isArchipelago
+            isArchipelago = true
             val locationIds = ArrayList(ItemsAndLocations.LOCATIONS.values)
             scoutLocations(locationIds)
             Gdx.app.postRunnable {
-                isArchipelago = true
-                swapSaveFiles()
-                PermaSaveState.read()
-                SaveState.read()
-                UserPrefs.read()
+                if (firstConnect) {
+                    swapSaveFiles()
+                    PermaSaveState.read()
+                    SaveState.read()
+                    UserPrefs.read()
+                }
                 connectionResultCallback?.invoke(true, null)
                 connectionResultCallback = null
+                setGameState(ClientStatus.CLIENT_PLAYING)
             }
         } else {
             FortyFiveLogger.warn(logTag, "connection failed: ${event.result}")
@@ -177,7 +184,7 @@ object APClient : Client() {
     @ArchipelagoEventListener
     fun onPrintJSON(event: PrintJSONEvent) {
         if (event.type != APPrintJsonType.Goal) return
-        val playerName = getSlotInfo()[event.player]?.name ?: return
+        val playerName = slotInfo[event.player]?.name ?: return
         Gdx.app.postRunnable {
             NotificationOverlay.show("$playerName has finished their goal!")
         }
@@ -185,6 +192,8 @@ object APClient : Client() {
 
     @ArchipelagoEventListener
     fun onItemReceived(event: ReceiveItemEvent) {
+        FortyFiveLogger.debug(logTag, "onItemReceived fired: isArchipelago=$isArchipelago index=${event.index} item=${event.itemName}")
+        if (!isArchipelago) return
         val index = event.index.toInt()
         if (index <= PermaSaveState.lastReceivedItemIndex) {
             FortyFiveLogger.debug(logTag, "skipping already-processed item at index $index: ${event.itemName}")
@@ -211,5 +220,6 @@ object APClient : Client() {
 
     override fun onClose(reason: String, attemptingReconnect: Int) {
         FortyFiveLogger.debug(logTag, "connection closed: $reason (reconnect attempt: $attemptingReconnect)")
+        setGameState(ClientStatus.CLIENT_READY)
     }
 }

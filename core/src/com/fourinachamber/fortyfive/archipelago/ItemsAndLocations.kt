@@ -48,13 +48,6 @@ object ItemsAndLocations {
         }
     }
 
-    val ALL_ITEM_NAMES: List<String> by lazy {
-        listOf(
-            "Hot Potato Trap", "Bewitched Trap", "Bewitching Trap", "Burning Trap",
-            "1 Cash", "5 Cash", "10 Cash", "25 Cash", "50 Cash", "75 Cash", "100 Cash",
-            "Partial Heal", "Full Heal", "Health Upgrade", "Progressive Town Unlock"
-        ) + APCardPool.cardsByTitle.keys.toList()
-    }
 
     val LOCATIONS: Map<String, Long> by lazy {
         val fixed = buildMap<String, Long> {
