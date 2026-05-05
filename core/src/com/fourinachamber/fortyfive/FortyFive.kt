@@ -251,7 +251,10 @@ object FortyFive : Game() {
         PermaSaveState.write()
         SaveState.write()
         UserPrefs.write()
-        if (APClient.isArchipelago) APClient.swapSaveFiles()
+        if (APClient.isArchipelago) {
+            APClient.disconnect()
+            APClient.swapSaveFiles()
+        }
         currentScreen?.dispose()
         serviceThread.close()
         ResourceManager.trimPrepared()

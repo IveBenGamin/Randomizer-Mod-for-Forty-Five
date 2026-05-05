@@ -22,6 +22,8 @@ object EventFactory {
         "AbandonRunEvent" to { AbandonRunEvent() },
         "ResetGameEvent" to { ResetGameEvent() },
         "APConnectEvent" to { APConnectEvent() },
+        "APButtonClickEvent" to { APButtonClickEvent() },
+        "APDisconnectEvent" to { APDisconnectEvent() },
         "StartGameEvent" to { StartGameEvent() },
     )
 
@@ -39,6 +41,8 @@ object EventFactory {
         "AbandonRunEvent" to AbandonRunEvent::class,
         "ResetGameEvent" to ResetGameEvent::class,
         "APConnectEvent" to APConnectEvent::class,
+        "APButtonClickEvent" to APButtonClickEvent::class,
+        "APDisconnectEvent" to APDisconnectEvent::class,
         "StartGameEvent" to StartGameEvent::class,
     )
 
@@ -90,6 +94,8 @@ class QuitGameEvent : Event()
 class AbandonRunEvent : Event()
 class ResetGameEvent : Event()
 class APConnectEvent : Event()
+class APButtonClickEvent : Event()
+class APDisconnectEvent : Event()
 class StartGameEvent : Event()
 
 /**

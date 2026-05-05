@@ -114,6 +114,8 @@ object APClient : Client() {
                 is Boolean -> v
                 else -> false
             }
+            val newSeed = slotData?.get("seed") as? String
+            val storedSeed = APSeedCache.readSeed()
             FortyFiveLogger.debug(logTag, "connected to Archipelago as slot ${event.slot}")
             val firstConnect = !isArchipelago
             isArchipelago = true
@@ -125,6 +127,11 @@ object APClient : Client() {
                     PermaSaveState.read()
                     SaveState.read()
                     UserPrefs.read()
+                    if (newSeed != null && newSeed != storedSeed) {
+                        FortyFiveLogger.debug(logTag, "seed changed ($storedSeed -> $newSeed), resetting all")
+                        FortyFive.resetAll()
+                        APSeedCache.writeSeed(newSeed)
+                    }
                 }
                 connectionResultCallback?.invoke(true, null)
                 connectionResultCallback = null

@@ -7,6 +7,7 @@ import com.fourinachamber.fortyfive.FortyFive
 import com.fourinachamber.fortyfive.archipelago.APClient
 import com.fourinachamber.fortyfive.game.PermaSaveState
 import com.fourinachamber.fortyfive.game.SaveState
+import com.fourinachamber.fortyfive.game.UserPrefs
 import com.fourinachamber.fortyfive.screen.SoundPlayer
 import com.fourinachamber.fortyfive.screen.general.*
 import com.fourinachamber.fortyfive.screen.general.customActor.CustomInputField
@@ -118,6 +119,14 @@ class TitleScreenController : ScreenController() {
         }
 
 
+        is APButtonClickEvent -> {
+            if (APClient.isArchipelago) {
+                screen.enterState(showAPDisconnectPopupScreenState)
+            } else {
+                screen.enterState(showAPConnectionPopupScreenState)
+            }
+        }
+
         is APConnectEvent -> {
             val address = (screen.namedActorOrError("ap_address_field") as CustomInputField).text.toString()
             val slotName = (screen.namedActorOrError("ap_slot_name_field") as CustomInputField).text.toString()
@@ -127,6 +136,10 @@ class TitleScreenController : ScreenController() {
                 if (showAPConnectionPopupScreenState in screen.screenState) {
                     if (success) {
                         screen.leaveState(showAPConnectionPopupScreenState)
+                        TemplateString.updateGlobalParam(
+                            "title_screen.startButtonText",
+                            if (SaveState.playerCompletedFirstTutorialEncounter) "Continue" else "Start your Journey"
+                        )
                     } else {
                         TemplateString.updateGlobalParam(
                             "title_screen.apConnectionError",
@@ -137,6 +150,19 @@ class TitleScreenController : ScreenController() {
                 }
             }
             APClient.connect(address, slotName, password)
+        }
+
+        is APDisconnectEvent -> {
+            screen.leaveState(showAPDisconnectPopupScreenState)
+            APClient.disconnect()
+            APClient.swapSaveFiles()
+            PermaSaveState.read()
+            SaveState.read()
+            UserPrefs.read()
+            TemplateString.updateGlobalParam(
+                "title_screen.startButtonText",
+                if (SaveState.playerCompletedFirstTutorialEncounter) "Continue" else "Start your Journey"
+            )
         }
 
         else -> {}
@@ -167,6 +193,8 @@ class TitleScreenController : ScreenController() {
             }
             return
         }
+        if (APClient.isArchipelago) screen.enterState(showAPConnectedState)
+        else screen.leaveState(showAPConnectedState)
         repeat(15) { i ->
             val actor = screen.namedActorOrError("title_screen_bullet_${i + 1}")
             actor as OffSettable
@@ -180,6 +208,8 @@ class TitleScreenController : ScreenController() {
         const val showAPConnectionPopupScreenState = "show_ap_connection_popup"
         const val showAPConnectionErrorState = "show_ap_connection_error"
         const val showNotConnectedPopupScreenState = "show_not_connected_popup"
+        const val showAPConnectedState = "ap_connected"
+        const val showAPDisconnectPopupScreenState = "show_ap_disconnect_popup"
     }
 
 }

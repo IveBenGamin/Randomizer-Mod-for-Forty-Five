@@ -3,6 +3,7 @@ package com.fourinachamber.fortyfive.archipelago
 import com.badlogic.gdx.Gdx
 import com.fourinachamber.fortyfive.game.PermaSaveState
 import com.fourinachamber.fortyfive.game.SaveState
+import com.fourinachamber.fortyfive.map.events.RandomCardSelection
 import com.fourinachamber.fortyfive.rendering.NotificationOverlay
 import kotlin.math.min
 
@@ -41,8 +42,8 @@ object ItemsAndLocations {
                     PermaSaveState.write()
                 }
                 else -> {
-                    val card = APCardPool.cardsByTitle[itemName]
-                    if (card != null) SaveState.queueCard(APCardPool.trueCardName(card.name))
+                    val cardName = RandomCardSelection.allCardPrototypes.find { it.title == itemName }?.name
+                    if (cardName != null) SaveState.queueCard(cardName)
                 }
             }
         }

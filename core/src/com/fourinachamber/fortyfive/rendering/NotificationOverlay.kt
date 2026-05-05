@@ -13,7 +13,7 @@ import com.fourinachamber.fortyfive.screen.general.OnjScreen
 
 object NotificationOverlay {
 
-    private const val DISPLAY_DURATION_MS = 4000L
+    private const val DISPLAY_DURATION_MS = 7000L
     private const val SLIDE_DURATION_MS = 200L
     private const val PAUSE_DURATION_MS = 200L
 
