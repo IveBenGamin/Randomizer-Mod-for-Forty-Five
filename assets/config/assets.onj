@@ -1346,6 +1346,12 @@ ninepatches: [
 ],
 
 particles: [
+//  {       TODO create files for confetti animation for Archipelago goal
+//      name: "confetti",
+//      file: "textures/particles/confetti.p",
+//      textureDir: "textures/particles/confetti.png",
+//      scale: 1.0,
+//  }
 ],
 
 frameAnimations: [

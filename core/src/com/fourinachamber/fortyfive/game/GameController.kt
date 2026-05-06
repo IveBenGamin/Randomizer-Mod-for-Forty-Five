@@ -1468,6 +1468,12 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
                 if (playerGetsCard) curScreen.enterState(showCardItem)
                 if (APClient.isArchipelago && SaveState.currentMap.contains("spire_outpost")) {
                     APClient.sendGoalComplete()
+                    // val confetti = CustomParticleActor(ResourceManager.get(curScreen, "confetti"))
+                    // confetti.isAutoRemove = true
+                    // confetti.fixedZIndex = Int.MAX_VALUE
+                    // confetti.setPosition(curScreen.width / 2f, curScreen.height / 2f)
+                    // curScreen.addActorToRoot(confetti)
+                    // confetti.start()     TODO create files for confetti animation for Archipelago goal
                 }
             }
             delayUntil { popupEvent != null }
