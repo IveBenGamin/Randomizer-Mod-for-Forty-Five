@@ -132,6 +132,7 @@ class TitleScreenController : ScreenController() {
             val slotName = (screen.namedActorOrError("ap_slot_name_field") as CustomInputField).text.toString()
             val password = (screen.namedActorOrError("ap_password_field") as CustomInputField).text.toString().takeIf { it.isNotBlank() }
             screen.leaveState(showAPConnectionErrorState)
+            // TODO `connectButton.clickable = false`
             APClient.connectionResultCallback = { success, errorMessage ->
                 if (showAPConnectionPopupScreenState in screen.screenState) {
                     if (success) {
@@ -140,12 +141,14 @@ class TitleScreenController : ScreenController() {
                             "title_screen.startButtonText",
                             if (SaveState.playerCompletedFirstTutorialEncounter) "Continue" else "Start your Journey"
                         )
+                        // TODO `connectButton.clickable = true`
                     } else {
                         TemplateString.updateGlobalParam(
                             "title_screen.apConnectionError",
                             "Failed to connect: $errorMessage"
                         )
                         screen.enterState(showAPConnectionErrorState)
+                        // TODO `connectButton.clickable = true`
                     }
                 }
             }
@@ -155,6 +158,7 @@ class TitleScreenController : ScreenController() {
         is APDisconnectEvent -> {
             screen.leaveState(showAPDisconnectPopupScreenState)
             APClient.disconnect()
+            APClient.isArchipelago = false
             APClient.swapSaveFiles()
             PermaSaveState.read()
             SaveState.read()
@@ -207,7 +211,6 @@ class TitleScreenController : ScreenController() {
         const val showInDevelopmentReminder = "show_in_development_reminder"
         const val showAPConnectionPopupScreenState = "show_ap_connection_popup"
         const val showAPConnectionErrorState = "show_ap_connection_error"
-        const val showNotConnectedPopupScreenState = "show_not_connected_popup"
         const val showAPConnectedState = "ap_connected"
         const val showAPDisconnectPopupScreenState = "show_ap_disconnect_popup"
     }

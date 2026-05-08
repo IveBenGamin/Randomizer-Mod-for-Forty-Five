@@ -14,4 +14,5 @@ playerFoughtMultipleEnemies: false,
 hasSeenInDevPopup: false,
 apItemLocations: [],
 lastReceivedItemIndex: -1,
-townsUnlockedCount: 0
+townsUnlockedCount: 0,
+enemiesDefeated: 0

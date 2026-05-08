@@ -64,7 +64,7 @@ private fun buildPool(protos: List<CardPrototype>): List<CardPrototype> {
                                 }
                             } else {
                                 if (playerName == APClient.myName) {
-                                    "This is your $itemName. If you don\'t know what that is, ¯\\_(ツ)_/¯."
+                                    "This is your $itemName. If you don\'t know what that is, I don\'t know what to tell ya."
                                 } else {
                                     "This $itemName belongs to $playerName\n\n\nCategory: $classification"
                                 }

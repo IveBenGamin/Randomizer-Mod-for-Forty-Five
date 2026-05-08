@@ -53,6 +53,12 @@ object PermaSaveState {
             saveFileDirty = true
         }
 
+    var enemiesDefeated: Int = 0
+        set(value) {
+            field = value
+            saveFileDirty = true
+        }
+
     var collection: List<String> = mutableListOf()
         set(value) {
             field = value
@@ -131,6 +137,7 @@ object PermaSaveState {
             ?: mutableListOf()
         lastReceivedItemIndex = obj.getOr<Long?>("lastReceivedItemIndex", null)?.toInt() ?: -1
         townsUnlockedCount = obj.getOr<Long?>("townsUnlockedCount", null)?.toInt() ?: 0
+        enemiesDefeated = obj.getOr<Long?>("enemiesDefeated", null)?.toInt() ?: 0
 
         saveFileDirty = false
     }
@@ -154,6 +161,7 @@ object PermaSaveState {
             "apItemLocations" with apItemLocations
             "lastReceivedItemIndex" with lastReceivedItemIndex
             "townsUnlockedCount" with townsUnlockedCount
+            "enemiesDefeated" with enemiesDefeated
         }
         Gdx.files.local(saveFilePath).file().writeText(obj.toString())
         saveFileDirty = false
@@ -178,7 +186,7 @@ object PermaSaveState {
 
     private fun copyDefaultFile() {
         FortyFiveLogger.debug(logTag, "copying default perma save")
-        val source = if (APClient.isArchipelago) apCacheDefaultSaveFilePath else defaultSaveFilePath
+        val source = defaultSaveFilePath
         Gdx.files.local(source).copyTo(Gdx.files.local(saveFilePath))
     }
 

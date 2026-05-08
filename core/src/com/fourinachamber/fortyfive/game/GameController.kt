@@ -1435,7 +1435,8 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
         enemy.onDefeat()
         enemyArea.onEnemyDefeated()
         SaveState.enemiesDefeated++
-        ItemsAndLocations.LOCATIONS["${SaveState.enemiesDefeated} Enemies Defeated"]?.let {
+        if(APClient.isArchipelago) PermaSaveState.enemiesDefeated++
+        ItemsAndLocations.LOCATIONS["${PermaSaveState.enemiesDefeated} Enemies Defeated"]?.let {
             APClient.locationManager.checkLocation(it)
             val info = APClient.scoutedLocations[it]
             if(info != null) {

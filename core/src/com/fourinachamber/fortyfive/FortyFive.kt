@@ -182,6 +182,9 @@ object FortyFive : Game() {
         UserPrefs.reset()
         if (APClient.isArchipelago && fullyInitialized && PermaSaveState.apItemLocations.isEmpty()) {
             PermaSaveState.apItemLocations = APCardPool.cards.map { it.name }.toMutableList()
+            PermaSaveState.write()
+            SaveState.write()
+            UserPrefs.write()
         }
         newRun(false)
     }

@@ -21,6 +21,9 @@ import io.github.archipelagomw.events.PrintJSONEvent
 import io.github.archipelagomw.events.ReceiveItemEvent
 import io.github.archipelagomw.network.ConnectionResult
 import io.github.archipelagomw.parts.NetworkItem
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 
 data class PendingAutoConnect(val host: String, val slot: String, val password: String?)
@@ -30,11 +33,10 @@ object APClient : Client() {
     const val logTag = "APClient"
     private const val GAME_NAME = "Forty-Five"
     private const val CONNECT_FILENAME = "forty-five-ap-connect.txt"
-    private val AP_SAVE_FILES = listOf("savefile.onj", "perma_savefile.onj", "user_prefs.onj")
+    private val AP_SAVE_FILES = listOf("savefile.onj", "perma_savefile.onj", "user_prefs.onj", "default_perma_savefile.onj")
 
     @Volatile
     var isArchipelago: Boolean = false
-        private set
 
     var pendingAutoConnect: PendingAutoConnect? = null
         private set
@@ -49,7 +51,16 @@ object APClient : Client() {
 
     val scoutedLocations: ConcurrentHashMap<Long, NetworkItem> = ConcurrentHashMap()
 
+    val fullyConnected = CompletableDeferred<Unit>()
+
+    val waitItemsJob = Job()
+
+    val waitItemsScope = CoroutineScope(waitItemsJob + Dispatchers.Default)
+
+    val itemMutex = Mutex()
+
     fun init() {
+        System.setProperty("java.net.preferIPv4Stack", "true")
         isArchipelago = false
         game = GAME_NAME
         itemsHandlingFlags = ItemsHandling.SEND_ITEMS or ItemsHandling.SEND_OWN_ITEMS or ItemsHandling.SEND_STARTING_INVENTORY
@@ -114,7 +125,11 @@ object APClient : Client() {
                 is Boolean -> v
                 else -> false
             }
-            val newSeed = slotData?.get("seed") as? String
+            val newSeed = when (val s = slotData?.get("seed")) {
+                is String -> s
+                is Number -> s.toString()
+                else -> null
+            }
             val storedSeed = APSeedCache.readSeed()
             FortyFiveLogger.debug(logTag, "connected to Archipelago as slot ${event.slot}")
             val firstConnect = !isArchipelago
@@ -124,19 +139,20 @@ object APClient : Client() {
             Gdx.app.postRunnable {
                 if (firstConnect) {
                     swapSaveFiles()
-                    PermaSaveState.read()
-                    SaveState.read()
-                    UserPrefs.read()
-                    if (newSeed != null && newSeed != storedSeed) {
-                        FortyFiveLogger.debug(logTag, "seed changed ($storedSeed -> $newSeed), resetting all")
-                        FortyFive.resetAll()
-                        APSeedCache.writeSeed(newSeed)
-                    }
+                }
+                PermaSaveState.read()
+                SaveState.read()
+                UserPrefs.read()
+                if (newSeed != null && newSeed != storedSeed) {
+                    FortyFiveLogger.debug(logTag, "seed changed ($storedSeed -> $newSeed), resetting all")
+                    FortyFive.resetAll()
+                    APSeedCache.writeSeed(newSeed)
                 }
                 connectionResultCallback?.invoke(true, null)
                 connectionResultCallback = null
-                setGameState(ClientStatus.CLIENT_PLAYING)
             }
+            setGameState(ClientStatus.CLIENT_PLAYING)
+            fullyConnected.complete(Unit)
         } else {
             FortyFiveLogger.warn(logTag, "connection failed: ${event.result}")
             val errorMessage = event.result.toString()
@@ -144,6 +160,8 @@ object APClient : Client() {
                 connectionResultCallback?.invoke(false, errorMessage)
                 connectionResultCallback = null
             }
+            waitItemsJob.cancel()
+            fullyConnected.cancel()
         }
     }
 
@@ -199,20 +217,25 @@ object APClient : Client() {
 
     @ArchipelagoEventListener
     fun onItemReceived(event: ReceiveItemEvent) {
-        FortyFiveLogger.debug(logTag, "onItemReceived fired: isArchipelago=$isArchipelago index=${event.index} item=${event.itemName}")
-        if (!isArchipelago) return
-        val index = event.index.toInt()
-        if (index <= PermaSaveState.lastReceivedItemIndex) {
-            FortyFiveLogger.debug(logTag, "skipping already-processed item at index $index: ${event.itemName}")
-            return
+        waitItemsScope.launch {
+            fullyConnected.await()
+            itemMutex.withLock {
+                FortyFiveLogger.debug(logTag, "onItemReceived fired: isArchipelago=$isArchipelago index=${event.index} item=${event.itemName}")
+                if (!isArchipelago) return@launch
+                val index = event.index.toInt()
+                if (index <= PermaSaveState.lastReceivedItemIndex) {
+                    FortyFiveLogger.debug(logTag, "skipping already-processed item at index $index: ${event.itemName}")
+                    return@launch
+                }
+                PermaSaveState.lastReceivedItemIndex = index
+                FortyFiveLogger.debug(logTag, "received item: ${event.itemName} from ${event.playerName} (index $index)")
+                ItemsAndLocations.receiveItem(event.itemName, event.playerName)
+            }
         }
-        PermaSaveState.lastReceivedItemIndex = index
-        FortyFiveLogger.debug(logTag, "received item: ${event.itemName} from ${event.playerName} (index $index)")
-        ItemsAndLocations.receiveItem(event.itemName, event.playerName)
     }
 
     override fun onError(ex: Exception) {
-        FortyFiveLogger.warn(logTag, "WebSocket error: ${ex.message}")
+        FortyFiveLogger.warn(logTag, "WebSocket error: ${ex::class.simpleName}: ${ex.message}\n${ex.stackTraceToString()}")
         val msg = ex.message ?: ""
         val message = if (ex is java.net.ConnectException || msg.contains("refused", ignoreCase = true) || msg.contains("unknown host", ignoreCase = true)) {
             "AP server does not exist"
@@ -226,7 +249,11 @@ object APClient : Client() {
     }
 
     override fun onClose(reason: String, attemptingReconnect: Int) {
-        FortyFiveLogger.debug(logTag, "connection closed: $reason (reconnect attempt: $attemptingReconnect)")
+        FortyFiveLogger.warn(logTag, "connection closed: $reason (reconnect attempt: $attemptingReconnect)")
         setGameState(ClientStatus.CLIENT_READY)
+        Gdx.app.postRunnable {
+            connectionResultCallback?.invoke(false, reason)
+            connectionResultCallback = null
+        }
     }
 }
