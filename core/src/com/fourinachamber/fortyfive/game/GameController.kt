@@ -1192,12 +1192,100 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
         .map { it.executeStatusEffectsAfterTurn() }
         .collectTimeline()
 
+    private fun trapActionAnimationTimeline(
+        commonPanel1: String,
+        commonPanel2: String,
+        commonPanel3: String,
+        specialPanel: String,
+        icon: String,
+        title: String
+    ): Timeline = Timeline.timeline {
+        val screen = curScreen
+        val data = mapOf(
+            "commonPanel1" to commonPanel1.onjString(),
+            "commonPanel2" to commonPanel2.onjString(),
+            "commonPanel3" to commonPanel3.onjString(),
+            "actionPanel" to specialPanel.onjString(),
+            "actionName" to title.onjString(),
+            "actionDescription" to "A \"gift\" from a benevolent soul.".onjString(),
+            "actionIcon" to icon.onjString(),
+        )
+        val parent = screen.namedActorOrError("enemy_action_animation_parent") as? FlexBox
+            ?: throw RuntimeException("actor named enemy_action_animation_parent must be a FlexBox")
+        var animActor: CustomFlexBox? = null
+        action {
+            animActor = screen.screenBuilder.generateFromTemplate(
+                "enemy_action_animation",
+                data,
+                parent,
+                screen
+            ) as? CustomFlexBox
+                ?: throw RuntimeException("template named enemy_action_animation must be a FlexBox")
+        }
+        delay(10)
+        action {
+            screen.enterState("enemy_action_anim")
+            dispatchAnimTimeline(Timeline.timeline {
+                repeat(4) {
+                    action { SoundPlayer.situation("enemy_action_anim", screen) }
+                    delay(200)
+                }
+            })
+        }
+        awaitConfirmationInput(screen, maxTime = 10_000)
+        action {
+            screen.leaveState("enemy_action_anim")
+            parent.remove(animActor!!.styleManager!!.node)
+            screen.removeAllStyleManagers(animActor!!)
+        }
+    }
+    // TODO consider making custom panels/icons for traps
     private fun applyTrapTimeline(trapName: String): Timeline = Timeline.timeline {
         when (trapName) {
-            "Hot Potato Trap" -> include(tryToPutCardsInHandTimeline("scorchingBullet"))
-            "Bewitching Trap" -> include(rotateRevolver(RevolverRotation.Left(1)))
-            "Bewitched Trap" -> action { applyStatusEffectToPlayer(Bewitched((2..3).random(), (3..5).random(), false)) }
-            "Burning Trap" -> action { applyStatusEffectToPlayer(BurningPlayer((3..6).random(), 0.5f, false, false)) }
+            "Hot Potato Trap" -> {
+                include(trapActionAnimationTimeline(
+                    "enemy_pyro_action_comic_common_panel_1",
+                    "enemy_pyro_action_comic_common_panel_2",
+                    "enemy_pyro_action_comic_common_panel_3",
+                    "enemy_pyro_action_comic_panel_hot_potato",
+                    "enemy_action_hot_potato",
+                    "Hot Potato"
+                ))
+                include(tryToPutCardsInHandTimeline("scorchingBullet"))
+            }
+            "Bewitching Trap" -> {
+                include(trapActionAnimationTimeline(
+                    "enemy_witch_action_comic_common_panel_1",
+                    "enemy_witch_action_comic_common_panel_2",
+                    "enemy_witch_action_comic_common_panel_3",
+                    "enemy_witch_action_comic_panel_left_turn",
+                    "enemy_action_left_turn",
+                    "Bewitched"
+                ))
+                include(rotateRevolver(RevolverRotation.Left(1)))
+            }
+            "Bewitched Trap" -> {
+                include(trapActionAnimationTimeline(
+                    "enemy_witch_action_comic_common_panel_1",
+                    "enemy_witch_action_comic_common_panel_2",
+                    "enemy_witch_action_comic_common_panel_3",
+                    "enemy_witch_action_comic_panel_bewitched",
+                    "enemy_action_bewitched",
+                    "Bewitched"
+                ))
+                action { applyStatusEffectToPlayer(Bewitched((2..3).random(), (3..5).random(), false)) }
+            }
+            "Burning Trap" -> {
+                include(trapActionAnimationTimeline(
+                    "enemy_pyro_action_comic_common_panel_1",
+                    "enemy_pyro_action_comic_common_panel_2",
+                    "enemy_pyro_action_comic_common_panel_3",
+                    "enemy_pyro_action_comic_panel_burning",
+                    "enemy_action_burning",
+                    "Burning"
+                ))
+                action { applyStatusEffectToPlayer(BurningPlayer((3..6).random(), 0.5f, false, false)) }
+            }
         }
     }
 

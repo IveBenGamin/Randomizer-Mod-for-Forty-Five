@@ -17,7 +17,6 @@ import com.fourinachamber.fortyfive.screen.ResourceManager
 import com.fourinachamber.fortyfive.screen.SoundPlayer
 import com.fourinachamber.fortyfive.utils.*
 import onj.customization.OnjConfig
-import onj.parser.OnjParser
 import onj.value.OnjArray
 import onj.value.OnjObject
 

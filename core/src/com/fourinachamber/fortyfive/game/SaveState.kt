@@ -43,12 +43,6 @@ object SaveState {
 
     private var _queue: MutableList<String> = mutableListOf()
 
-    private val _obtainableCards by lazy {
-        RandomCardSelection.allCardPrototypes
-            .filter { "not used" !in it.tags && "unobtainable" !in it.tags }
-            .sortedBy { it.name.lowercase() }
-    }
-
     val cards: List<String>
         get() = _cards
 
@@ -403,7 +397,7 @@ object SaveState {
                 savefileDirty = true
             }
             //TODO ugly, this code should never be necessary
-            val remainingCards = SaveState._cards.toMutableList()
+            val remainingCards = _cards.toMutableList()
             val iterator = _cardPositions.iterator()
             while (iterator.hasNext()) {
                 val it = iterator.next()

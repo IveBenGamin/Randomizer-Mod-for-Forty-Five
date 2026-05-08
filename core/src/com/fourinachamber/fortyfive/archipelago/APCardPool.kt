@@ -116,10 +116,6 @@ object APCardPool {
         buildPool(RandomCardSelection.allCardPrototypes)
     }
 
-    val cardsByTitle: Map<String, CardPrototype> by lazy {
-        cards.associateBy { it.title }
-    }
-
     val cardsByName: Map<String, CardPrototype> by lazy {
         cards.associateBy { it.name }
     }

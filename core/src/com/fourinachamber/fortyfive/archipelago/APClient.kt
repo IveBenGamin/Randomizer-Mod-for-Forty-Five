@@ -136,21 +136,19 @@ object APClient : Client() {
             isArchipelago = true
             val locationIds = ArrayList(ItemsAndLocations.LOCATIONS.values)
             scoutLocations(locationIds)
-            Gdx.app.postRunnable {
-                if (firstConnect) {
-                    swapSaveFiles()
-                }
-                PermaSaveState.read()
-                SaveState.read()
-                UserPrefs.read()
-                if (newSeed != null && newSeed != storedSeed) {
-                    FortyFiveLogger.debug(logTag, "seed changed ($storedSeed -> $newSeed), resetting all")
-                    FortyFive.resetAll()
-                    APSeedCache.writeSeed(newSeed)
-                }
-                connectionResultCallback?.invoke(true, null)
-                connectionResultCallback = null
+            if (firstConnect) {
+                swapSaveFiles()
             }
+            PermaSaveState.read()
+            SaveState.read()
+            UserPrefs.read()
+            if (newSeed != null && newSeed != storedSeed) {
+                FortyFiveLogger.debug(logTag, "seed changed ($storedSeed -> $newSeed), resetting all")
+                FortyFive.resetAll()
+                APSeedCache.writeSeed(newSeed)
+            }
+            connectionResultCallback?.invoke(true, null)
+            connectionResultCallback = null
             setGameState(ClientStatus.CLIENT_PLAYING)
             fullyConnected.complete(Unit)
         } else {
