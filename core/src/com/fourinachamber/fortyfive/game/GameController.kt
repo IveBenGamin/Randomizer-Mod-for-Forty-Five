@@ -15,6 +15,7 @@ import com.fourinachamber.fortyfive.game.card.Trigger
 import com.fourinachamber.fortyfive.game.card.TriggerInformation
 import com.fourinachamber.fortyfive.game.enemy.Enemy
 import com.fourinachamber.fortyfive.map.MapManager
+import com.fourinachamber.fortyfive.map.detailMap.EncounterMapEvent
 import com.fourinachamber.fortyfive.map.events.chooseCard.ChooseCardScreenContext
 import com.fourinachamber.fortyfive.rendering.BetterShader
 import com.fourinachamber.fortyfive.rendering.GameRenderPipeline
@@ -1555,14 +1556,21 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
                 if (money > 0) curScreen.enterState(showCashItem)
                 TemplateString.updateGlobalParam("game.overkillCash", money)
                 if (playerGetsCard) curScreen.enterState(showCardItem)
-                if (APClient.isArchipelago && SaveState.currentMap.contains("spire_outpost")) {
-                    APClient.sendGoalComplete()
-                    // val confetti = CustomParticleActor(ResourceManager.get(curScreen, "confetti"))
-                    // confetti.isAutoRemove = true
-                    // confetti.fixedZIndex = Int.MAX_VALUE
-                    // confetti.setPosition(curScreen.width / 2f, curScreen.height / 2f)
-                    // curScreen.addActorToRoot(confetti)
-                    // confetti.start()     TODO create files for confetti animation for Archipelago goal
+                if (APClient.isArchipelago) {
+                    val isSpireOutpostWin = APClient.goalCondition == 0
+                        && SaveState.currentMap == "spire_outpost"
+                    val isEarlyGoalWin = APClient.goalCondition == 1
+                        && SaveState.currentMap == "road_between_tabu_letter_outpost_and_salem"
+                        && (encounterContext as? EncounterMapEvent)?.distanceToEnd == 1
+                    if (isSpireOutpostWin || isEarlyGoalWin) {
+                        APClient.sendGoalComplete()
+                        // val confetti = CustomParticleActor(ResourceManager.get(curScreen, "confetti"))
+                        // confetti.isAutoRemove = true
+                        // confetti.fixedZIndex = Int.MAX_VALUE
+                        // confetti.setPosition(curScreen.width / 2f, curScreen.height / 2f)
+                        // curScreen.addActorToRoot(confetti)
+                        // confetti.start()     TODO create files for confetti animation for Archipelago goal
+                    }
                 }
             }
             delayUntil { popupEvent != null }

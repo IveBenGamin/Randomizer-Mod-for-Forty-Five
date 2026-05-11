@@ -47,6 +47,9 @@ object APClient : Client() {
     var obscuredChoices: Boolean = false
         private set
 
+    var goalCondition: Int = 0
+        private set
+
     var connectionResultCallback: ((success: Boolean, errorMessage: String?) -> Unit)? = null
 
     val scoutedLocations: ConcurrentHashMap<Long, NetworkItem> = ConcurrentHashMap()
@@ -124,6 +127,10 @@ object APClient : Client() {
                 is Number -> v.toInt() == 1
                 is Boolean -> v
                 else -> false
+            }
+            goalCondition = when (val v = slotData?.get("goal_condition")) {
+                is Number -> v.toInt()
+                else -> 0
             }
             val newSeed = when (val s = slotData?.get("seed")) {
                 is String -> s
