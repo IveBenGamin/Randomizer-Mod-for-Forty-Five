@@ -11,12 +11,12 @@ object ItemsAndLocations {
 
     val pendingTraps: MutableList<String> = mutableListOf()
 
-    fun receiveItem(itemName: String, playerName: String) {
+    fun receiveItem(itemName: String, playerName: String, flags: Int) {
         Gdx.app.postRunnable {
             NotificationOverlay.show(if (playerName == APClient.myName) {
-                "Gave yourself $itemName"
+                "Gave \$magenta\$yourself\$magenta$ ${APColors.itemWrap(itemName, flags)}"
             } else {
-                "Received $itemName from $playerName"
+                "Received ${APColors.itemWrap(itemName, flags)} from \$yellow$$playerName\$yellow$"
             })
             when (itemName) {
                 "Hot Potato Trap" -> pendingTraps.add("Hot Potato Trap")

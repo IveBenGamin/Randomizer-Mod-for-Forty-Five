@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.TimeUtils
+import com.fourinachamber.fortyfive.archipelago.APColors
 import com.fourinachamber.fortyfive.screen.general.OnjScreen
 
 object NotificationOverlay {
@@ -40,6 +41,7 @@ object NotificationOverlay {
     private val fontDelegate = lazy {
         BitmapFont(Gdx.files.internal("fonts/roadgeek_bmp.fnt"), TextureRegion(fontTexture), false).also {
             it.setUseIntegerPositions(false)
+            it.data.markupEnabled = true
         }
     }
     private val font: BitmapFont by fontDelegate
@@ -89,7 +91,7 @@ object NotificationOverlay {
             batch.draw(background, x, 20f, 375f, 110f)
             batch.draw(foreground, x, 25f, 370f, 100f)
             font.data.setScale(0.8f)
-            val layout = GlyphLayout(font, msg, Color(0x313131ff), 340f, Align.center, true)
+            val layout = GlyphLayout(font, APColors.toMarkup(msg), Color(0x313131ff), 340f, Align.center, true)
             font.draw(batch, layout, x - REST_X + 10f, 75f + layout.height / 2f)
         }
     }

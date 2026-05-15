@@ -64,7 +64,7 @@ object APClient : Client() {
     val itemMutex = Mutex()
 
     fun init() {
-        System.setProperty("java.net.preferIPv4Stack", "true")
+        System.setProperty("java.net.preferIPv4Addresses", "true")
         isArchipelago = false
         game = GAME_NAME
         itemsHandlingFlags = ItemsHandling.SEND_ITEMS or ItemsHandling.SEND_OWN_ITEMS or ItemsHandling.SEND_STARTING_INVENTORY
@@ -231,9 +231,10 @@ object APClient : Client() {
     @ArchipelagoEventListener
     fun onPrintJSON(event: PrintJSONEvent) {
         if (event.type != APPrintJsonType.Goal) return
-        val playerName = slotInfo[event.player]?.name ?: return
+        val playerName = slotInfo[event.apPrint.slot]?.name ?: return
+        if (playerName == myName) return
         Gdx.app.postRunnable {
-            NotificationOverlay.show("$playerName has finished their goal!")
+            NotificationOverlay.show("\$yellow$$playerName\$yellow$ has finished their goal!")
         }
     }
 
@@ -251,7 +252,7 @@ object APClient : Client() {
                 }
                 PermaSaveState.lastReceivedItemIndex = index
                 FortyFiveLogger.debug(logTag, "received item: ${event.itemName} from ${event.playerName} (index $index)")
-                ItemsAndLocations.receiveItem(event.itemName, event.playerName)
+                ItemsAndLocations.receiveItem(event.itemName, event.playerName, event.item.flags)
             }
         }
     }

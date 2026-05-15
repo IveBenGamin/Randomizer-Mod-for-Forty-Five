@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx
 import com.fourinachamber.fortyfive.game.card.Card
 import com.fourinachamber.fortyfive.game.card.CardPrototype
 import com.fourinachamber.fortyfive.map.events.RandomCardSelection
-import io.github.archipelagomw.flags.NetworkItem as NetworkItemFlags
 import onj.parser.OnjParser
 import onj.value.OnjArray
 import onj.value.OnjObject
@@ -50,23 +49,18 @@ private fun buildPool(protos: List<CardPrototype>): List<CardPrototype> {
                         if (info != null) {
                             val itemName = info.itemName
                             val playerName = info.playerName
-                            val classification = when {
-                                info.flags and NetworkItemFlags.ADVANCEMENT != 0 -> "Progression"
-                                info.flags and NetworkItemFlags.USEFUL != 0 -> "Useful"
-                                info.flags and NetworkItemFlags.TRAP != 0 -> "Trap"
-                                else -> "Filler"
-                            }
+                            val classification = APColors.classify(info.flags)
                             card.shortDescription = if (APClient.obscuredChoices) {
                                 if (playerName == APClient.myName) {
                                     "It could be any one of your bullets"
                                 } else {
-                                    "It's... something... for $playerName."
+                                    "It's... something... for \$yellow$$playerName\$yellow$."
                                 }
                             } else {
                                 if (playerName == APClient.myName) {
-                                    "This is your $itemName. If you don\'t know what that is, I don\'t know what to tell ya."
+                                    "This is your ${APColors.itemWrap(itemName, classification)}. If you don\'t know what that is, I don\'t know what to tell ya."
                                 } else {
-                                    "This $itemName belongs to $playerName\n\n\nCategory: $classification"
+                                    "This ${APColors.itemWrap(itemName, classification)} belongs to \$yellow$$playerName\$yellow$\n\n\nCategory: $classification"
                                 }
                             }
                         }

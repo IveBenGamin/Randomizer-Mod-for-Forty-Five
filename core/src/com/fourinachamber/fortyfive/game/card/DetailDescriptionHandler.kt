@@ -1,6 +1,7 @@
 package com.fourinachamber.fortyfive.game.card
 
 import com.badlogic.gdx.graphics.Color
+import com.fourinachamber.fortyfive.archipelago.APColors
 import com.fourinachamber.fortyfive.utils.AdvancedTextParser
 import onj.parser.OnjParser
 import onj.value.OnjArray
@@ -44,6 +45,9 @@ object DetailDescriptionHandler {
         val res = mutableListOf<OnjValue>()
         for (i in groups) {
             res.add(AdvancedTextParser.AdvancedTextEffect.AdvancedColorTextEffect("\$${i.key}$", i.value).asOnjObject())
+        }
+        for (effect in APColors.textEffects) {
+            res.add(effect.asOnjObject())
         }
         res.addAll(default.value)
         return OnjArray(res)

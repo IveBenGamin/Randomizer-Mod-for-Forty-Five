@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.Event
 import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop
 import com.badlogic.gdx.utils.TimeUtils
 import com.fourinachamber.fortyfive.archipelago.APClient
+import com.fourinachamber.fortyfive.archipelago.APColors
 import com.fourinachamber.fortyfive.archipelago.ItemsAndLocations
 import com.fourinachamber.fortyfive.FortyFive
 import com.fourinachamber.fortyfive.game.card.Card
@@ -29,7 +30,6 @@ import com.fourinachamber.fortyfive.screen.general.*
 import com.fourinachamber.fortyfive.screen.general.customActor.CustomWarningParent
 import com.fourinachamber.fortyfive.utils.*
 import dev.lyze.flexbox.FlexBox
-import io.github.archipelagomw.flags.NetworkItem as NetworkItemFlags
 import ktx.actors.onClick
 import onj.parser.OnjParser
 import onj.parser.OnjSchemaParser
@@ -1529,14 +1529,9 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
             APClient.locationManager.checkLocation(it)
             val info = APClient.scoutedLocations[it]
             if(info != null) {
-                val classification = when {
-                    info.flags and NetworkItemFlags.ADVANCEMENT != 0 -> "Progression"
-                    info.flags and NetworkItemFlags.USEFUL != 0 -> "Useful"
-                    info.flags and NetworkItemFlags.TRAP != 0 -> "Trap"
-                    else -> "Filler"
-                }
+                val classification = APColors.classify(info.flags)
                 if (info.playerName != APClient.myName) {
-                    NotificationOverlay.show("Sent ${info.itemName} to ${info.playerName} ($classification)")
+                    NotificationOverlay.show("Sent ${APColors.itemWrap(info.itemName, classification)} to \$yellow$${info.playerName}\$yellow$ ($classification)")
                 }
             }
         }
