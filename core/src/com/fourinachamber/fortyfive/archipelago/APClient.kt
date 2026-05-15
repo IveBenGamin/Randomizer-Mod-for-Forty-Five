@@ -34,6 +34,7 @@ object APClient : Client() {
     private const val GAME_NAME = "Forty-Five"
     private const val CONNECT_FILENAME = "forty-five-ap-connect.txt"
     private val AP_SAVE_FILES = listOf("savefile.onj", "perma_savefile.onj", "user_prefs.onj", "default_perma_savefile.onj")
+    private val AP_MAP_DIRS = listOf("maps/roads", "maps/areas")
 
     @Volatile
     var isArchipelago: Boolean = false
@@ -103,7 +104,23 @@ object APClient : Client() {
             if (cached.exists()) cached.moveTo(active)
             if (temp.exists()) temp.moveTo(cached)
         }
+        for (dir in AP_MAP_DIRS) {
+            swapMapDirectory(dir)
+        }
         FortyFiveLogger.debug(logTag, "swapped save files with APCache")
+    }
+
+    private fun swapMapDirectory(dirPath: String) {
+        val active = Gdx.files.internal(dirPath).file()
+        val cache = Gdx.files.local("saves/APCache/$dirPath").file()
+        val temp = Gdx.files.local("saves/APCache/${dirPath}.tmp").file()
+
+        temp.deleteRecursively()
+        if (active.exists()) active.copyRecursively(temp, overwrite = true)
+        active.listFiles()?.forEach { it.deleteRecursively() }
+        if (cache.exists()) cache.copyRecursively(active, overwrite = true)
+        cache.deleteRecursively()
+        if (temp.exists()) temp.renameTo(cache)
     }
 
     fun connect(address: String, slotName: String, password: String? = null) {

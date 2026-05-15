@@ -1547,7 +1547,11 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
     @MainThreadOnly
     private fun completeWin() {
         val money = -enemyArea.enemies.sumOf { it.currentHealth }
-        val playerGetsCard = !gameDirector.encounter.special && Utils.coinFlip(rewardChance)
+        val isEarlyGoalWin = APClient.isArchipelago
+            && APClient.goalCondition == 1
+            && SaveState.currentMap == "road_between_tabu_letter_outpost_and_salem"
+            && (encounterContext as? EncounterMapEvent)?.distanceToEnd == 1
+        val playerGetsCard = !isEarlyGoalWin && !gameDirector.encounter.special && Utils.coinFlip(rewardChance)
         appendMainTimeline(Timeline.timeline {
             action {
                 SoundPlayer.transitionToMusic(musicAfterWin, musicTransitionTime, curScreen)
@@ -1556,21 +1560,14 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
                 if (money > 0) curScreen.enterState(showCashItem)
                 TemplateString.updateGlobalParam("game.overkillCash", money)
                 if (playerGetsCard) curScreen.enterState(showCardItem)
-                if (APClient.isArchipelago) {
-                    val isSpireOutpostWin = APClient.goalCondition == 0
-                        && SaveState.currentMap == "spire_outpost"
-                    val isEarlyGoalWin = APClient.goalCondition == 1
-                        && SaveState.currentMap == "road_between_tabu_letter_outpost_and_salem"
-                        && (encounterContext as? EncounterMapEvent)?.distanceToEnd == 1
-                    if (isSpireOutpostWin || isEarlyGoalWin) {
-                        APClient.sendGoalComplete()
-                        // val confetti = CustomParticleActor(ResourceManager.get(curScreen, "confetti"))
-                        // confetti.isAutoRemove = true
-                        // confetti.fixedZIndex = Int.MAX_VALUE
-                        // confetti.setPosition(curScreen.width / 2f, curScreen.height / 2f)
-                        // curScreen.addActorToRoot(confetti)
-                        // confetti.start()     TODO create files for confetti animation for Archipelago goal
-                    }
+                if (isEarlyGoalWin) {
+                    APClient.sendGoalComplete()
+                    // val confetti = CustomParticleActor(ResourceManager.get(curScreen, "confetti"))
+                    // confetti.isAutoRemove = true
+                    // confetti.fixedZIndex = Int.MAX_VALUE
+                    // confetti.setPosition(curScreen.width / 2f, curScreen.height / 2f)
+                    // curScreen.addActorToRoot(confetti)
+                    // confetti.start()     TODO create files for confetti animation for Archipelago goal
                 }
             }
             delayUntil { popupEvent != null }
@@ -1599,6 +1596,11 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
                 popupEvent = null
                 encounterContext.completed()
                 SaveState.write()
+
+                if (isEarlyGoalWin) {
+                    MapManager.changeToCreditsScreen()
+                    return@action
+                }
 
                 val chooseCardContext = object : ChooseCardScreenContext {
                     override val forwardToScreen: String = encounterContext.forwardToScreen

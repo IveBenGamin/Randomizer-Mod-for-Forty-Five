@@ -310,8 +310,10 @@ object SaveState {
         savefileDirty = true
     }
 
+    var isBackpackOpen: Boolean = false
+
     fun queueCard(card: String) {
-        if (FortyFive.currentGame != null)
+        if (FortyFive.currentGame != null || isBackpackOpen)
             _queue.add(card)
         else
             _cards.add(card)

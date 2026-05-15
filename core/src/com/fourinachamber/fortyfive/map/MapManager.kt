@@ -3,6 +3,7 @@ package com.fourinachamber.fortyfive.map
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.files.FileHandle
 import com.fourinachamber.fortyfive.FortyFive
+import com.fourinachamber.fortyfive.archipelago.APClient
 import com.fourinachamber.fortyfive.game.GameController
 import com.fourinachamber.fortyfive.game.GameDirector
 import com.fourinachamber.fortyfive.game.SaveState
@@ -220,7 +221,17 @@ object MapManager {
     fun newRunSync() {
         generateMapsSync()
         copyStaticMaps()
+        if (APClient.isArchipelago) assignEncountersToAreas()
         read()
+    }
+
+    private fun assignEncountersToAreas() {
+        Gdx.files.internal(areaMapsPath).list().forEach { areaFile ->
+            if (!areaFile.extension().equals("onj", ignoreCase = true)) return@forEach
+            val map = try { DetailMap.readFromFile(areaFile) } catch (e: Exception) { return@forEach }
+            GameDirector.assignEncounters(map)
+            areaFile.file().writeText(map.asOnjObject().toMinifiedString())
+        }
     }
 
     private fun copyStaticMaps() {

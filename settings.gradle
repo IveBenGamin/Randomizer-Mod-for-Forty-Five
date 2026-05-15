@@ -1,1 +1,1 @@
-include 'desktop', 'core', 'onj'
+include 'desktop', 'core', 'onj', 'installer'

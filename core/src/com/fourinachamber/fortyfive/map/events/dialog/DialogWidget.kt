@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable
 import com.badlogic.gdx.utils.TimeUtils
 import com.fourinachamber.fortyfive.FortyFive
+import com.fourinachamber.fortyfive.archipelago.APClient
 import com.fourinachamber.fortyfive.map.MapManager
 import com.fourinachamber.fortyfive.map.events.chooseCard.ChooseCardScreenContext
 import com.fourinachamber.fortyfive.screen.ResourceHandle
@@ -148,6 +149,7 @@ class DialogWidget(
             action { readyToAdvance = true }
             delayUntil { !readyToAdvance }
             action {
+                if (APClient.isArchipelago && APClient.goalCondition == 0) APClient.sendGoalComplete()
                 end()
                 MapManager.changeToCreditsScreen()
             }

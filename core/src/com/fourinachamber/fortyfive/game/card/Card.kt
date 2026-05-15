@@ -506,6 +506,7 @@ class Card(
                         ?: 0
                     "most expensive bullet costs $mostExpensive"
                 }
+                "uniqueCardsInStack" -> "${FortyFive.currentGame!!.uniqueCardsInStack()} unique bullets in stack"
                 else -> throw RuntimeException("unknown additional hover info $info")
             }
         }

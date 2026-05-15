@@ -158,10 +158,12 @@ object PermaSaveState {
             "visitedAreas" with _visitedAreas
             "playerFoughtMultipleEnemies" with playerFoughtMultipleEnemies
             "hasSeenInDevPopup" with hasSeenInDevPopup
-            "apItemLocations" with apItemLocations
-            "lastReceivedItemIndex" with lastReceivedItemIndex
-            "townsUnlockedCount" with townsUnlockedCount
-            "enemiesDefeated" with enemiesDefeated
+            if (APClient.isArchipelago) {
+                "apItemLocations" with apItemLocations
+                "lastReceivedItemIndex" with lastReceivedItemIndex
+                "townsUnlockedCount" with townsUnlockedCount
+                "enemiesDefeated" with enemiesDefeated
+            }
         }
         Gdx.files.local(saveFilePath).file().writeText(obj.toString())
         saveFileDirty = false

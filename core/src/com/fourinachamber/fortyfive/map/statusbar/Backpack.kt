@@ -412,6 +412,7 @@ class Backpack(
 
 
     override fun display(): Timeline {
+        SaveState.isBackpackOpen = true
         if (FortyFive.currentGame != null) CustomWarningParent.getWarning(screen).addWarning(
             screen,
             "Editing in Encounter",
@@ -472,6 +473,8 @@ class Backpack(
     }
 
     override fun hide(): Timeline {
+        SaveState.isBackpackOpen = false
+        if (FortyFive.currentGame == null) SaveState.dumpQueue()
         return Timeline.timeline {
             parallelActions(
                 getInOutTimeLine(isGoingIn = false, false, deckCardsWidget.parent as CustomFlexBox).asAction(),

@@ -1,0 +1,39 @@
+apply plugin: "kotlin"
+
+sourceSets {
+    main {
+        kotlin {
+            srcDirs = ['../scripts/installer']
+        }
+    }
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = '14'
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+}
+
+task installerJar(type: Jar) {
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    manifest { attributes 'Main-Class': 'installer.InstallerKt' }
+    dependsOn compileKotlin
+    dependsOn configurations.runtimeClasspath
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+    archiveFileName = 'installer.jar'
+    destinationDirectory = file("${rootProject.buildDir}/script")
+}
+
+task uninstallerJar(type: Jar) {
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    manifest { attributes 'Main-Class': 'uninstaller.UninstallerKt' }
+    dependsOn compileKotlin
+    dependsOn configurations.runtimeClasspath
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+    archiveFileName = 'uninstaller.jar'
+    destinationDirectory = file("${rootProject.buildDir}/script")
+}

@@ -512,6 +512,7 @@ class FinishTutorialMapEvent(
 
     override fun start() {
         SaveState.playerLives = SaveState.maxPlayerLives
+        SaveState.playerCompletedFirstTutorialEncounter = true
         SaveState.write()
         PermaSaveState.playerHasCompletedTutorial = true
         PermaSaveState.write()
