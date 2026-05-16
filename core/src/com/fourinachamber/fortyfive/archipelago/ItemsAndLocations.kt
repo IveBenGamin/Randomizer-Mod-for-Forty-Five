@@ -5,18 +5,43 @@ import com.fourinachamber.fortyfive.game.PermaSaveState
 import com.fourinachamber.fortyfive.game.SaveState
 import com.fourinachamber.fortyfive.map.events.RandomCardSelection
 import com.fourinachamber.fortyfive.rendering.NotificationOverlay
+import com.fourinachamber.fortyfive.utils.FortyFiveLogger
+import io.github.archipelagomw.flags.NetworkItem as NetworkItemFlags
 import kotlin.math.min
+
+// Archipelago strips flags from precollected (start inventory) items, sending flags=0 for everything.
+// This map restores the correct flags by name so notifications still show the right color.
+private val itemFlagsByName: Map<String, Int> = buildMap {
+    val t = NetworkItemFlags.TRAP
+    val u = NetworkItemFlags.USEFUL
+    val a = NetworkItemFlags.ADVANCEMENT
+    put("Hot Potato Trap",  t); put("Bewitched Trap", t); put("Bewitching Trap", t); put("Burning Trap", t)
+    put("25 Cash", u); put("50 Cash", u); put("75 Cash", u); put("100 Cash", u)
+    put("Partial Heal", u); put("Full Heal", u)
+    put("Health Upgrade", a); put("Progressive Town Unlock", a)
+}
+
+private fun resolveFlags(itemName: String, flags: Int): Int {
+    if (flags != 0) return flags
+    itemFlagsByName[itemName]?.let { return it }
+    if (APCardPool.cards.any { it.title == itemName }) return NetworkItemFlags.USEFUL
+    return 0
+}
 
 object ItemsAndLocations {
 
     val pendingTraps: MutableList<String> = mutableListOf()
 
+    private const val logTag = "ItemsAndLocations"
+
     fun receiveItem(itemName: String, playerName: String, flags: Int) {
+        val resolvedFlags = resolveFlags(itemName, flags)
+        FortyFiveLogger.debug(logTag, "receiveItem: $itemName flags=$flags resolvedFlags=$resolvedFlags classification=${APColors.classify(resolvedFlags)}")
         Gdx.app.postRunnable {
             NotificationOverlay.show(if (playerName == APClient.myName) {
-                "Gave \$magenta\$yourself\$magenta$ ${APColors.itemWrap(itemName, flags)}"
+                "Gave \$magenta\$yourself\$magenta$ ${APColors.itemWrap(itemName, resolvedFlags)}"
             } else {
-                "Received ${APColors.itemWrap(itemName, flags)} from \$yellow$$playerName\$yellow$"
+                "Received ${APColors.itemWrap(itemName, resolvedFlags)} from \$yellow$$playerName\$yellow$"
             })
             when (itemName) {
                 "Hot Potato Trap" -> pendingTraps.add("Hot Potato Trap")
