@@ -6,6 +6,7 @@ import com.fourinachamber.fortyfive.game.enemy.Enemy
 import com.fourinachamber.fortyfive.game.enemy.EnemyAction
 import com.fourinachamber.fortyfive.game.enemy.NextEnemyAction
 import com.fourinachamber.fortyfive.archipelago.APClient
+import com.fourinachamber.fortyfive.archipelago.ItemsAndLocations
 import com.fourinachamber.fortyfive.map.detailMap.DetailMap
 import com.fourinachamber.fortyfive.map.detailMap.EncounterMapEvent
 import com.fourinachamber.fortyfive.utils.*
@@ -43,6 +44,9 @@ class GameDirector(private val controller: GameController) {
         this.encounter = encounter
         controller.addTutorialText(encounter.tutorialTextParts)
         controller.initEnemyArea(enemies)
+        if (APClient.isArchipelago && APClient.hardMode && encounter.enemies.none { it.startsWith("Pyro") }) {
+            ItemsAndLocations.pendingTraps.add("Hard Mode Trap")
+        }
     }
 
     fun chooseEnemyActions() {

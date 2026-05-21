@@ -55,6 +55,9 @@ object APClient : Client() {
     var obscuredChoices: Boolean = false
         private set
 
+    var hardMode: Boolean = false
+        private set
+
     var goalCondition: Int = 0
         private set
 
@@ -170,6 +173,11 @@ object APClient : Client() {
             }
             setDeathLinkEnabled(deathLinkMode > 0)
             obscuredChoices = when (val v = slotData?.get("obscured_choices")) {
+                is Number -> v.toInt() == 1
+                is Boolean -> v
+                else -> false
+            }
+            hardMode = when (val v = slotData?.get("hard_mode")) {
                 is Number -> v.toInt() == 1
                 is Boolean -> v
                 else -> false

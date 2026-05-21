@@ -1199,7 +1199,8 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
         commonPanel3: String,
         specialPanel: String,
         icon: String,
-        title: String
+        title: String,
+        description: String = "A \"gift\" from a benevolent soul."
     ): Timeline = Timeline.timeline {
         val screen = curScreen
         val data = mapOf(
@@ -1208,7 +1209,7 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
             "commonPanel3" to commonPanel3.onjString(),
             "actionPanel" to specialPanel.onjString(),
             "actionName" to title.onjString(),
-            "actionDescription" to "A \"gift\" from a benevolent soul.".onjString(),
+            "actionDescription" to description.onjString(),
             "actionIcon" to icon.onjString(),
         )
         val parent = screen.namedActorOrError("enemy_action_animation_parent") as? FlexBox
@@ -1251,6 +1252,18 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
                     "enemy_pyro_action_comic_panel_hot_potato",
                     "enemy_action_hot_potato",
                     "Hot Potato"
+                ))
+                include(tryToPutCardsInHandTimeline("scorchingBullet"))
+            }
+            "Hard Mode Trap" -> {
+                include(trapActionAnimationTimeline(
+                    "enemy_pyro_action_comic_common_panel_1",
+                    "enemy_pyro_action_comic_common_panel_2",
+                    "enemy_pyro_action_comic_common_panel_3",
+                    "enemy_pyro_action_comic_panel_hot_potato",
+                    "enemy_action_hot_potato",
+                    "Hot Potato",
+                    "Well you asked for this."
                 ))
                 include(tryToPutCardsInHandTimeline("scorchingBullet"))
             }
