@@ -30,17 +30,22 @@ data class PendingAutoConnect(val host: String, val slot: String, val password: 
 
 object APClient : Client() {
 
+    // -------------------------------------------------------------------------
+    // Constants
+    // -------------------------------------------------------------------------
+
     const val logTag = "APClient"
     private const val GAME_NAME = "Forty-Five"
     private const val CONNECT_FILENAME = "forty-five-ap-connect.txt"
     private val AP_SAVE_FILES = listOf("savefile.onj", "perma_savefile.onj", "user_prefs.onj", "default_perma_savefile.onj")
     private val AP_MAP_DIRS = listOf("maps/roads", "maps/areas")
 
+    // -------------------------------------------------------------------------
+    // AP mode state (slot-data options received on connect)
+    // -------------------------------------------------------------------------
+
     @Volatile
     var isArchipelago: Boolean = false
-
-    var pendingAutoConnect: PendingAutoConnect? = null
-        private set
 
     var deathLinkMode: Int = 0  // 0 = none, 1 = lenient, 2 = torture
         private set
@@ -53,19 +58,33 @@ object APClient : Client() {
     var goalCondition: Int = 0
         private set
 
+    // -------------------------------------------------------------------------
+    // Pending / in-flight state
+    // -------------------------------------------------------------------------
+
+    var pendingAutoConnect: PendingAutoConnect? = null
+        private set
+
+    var pendingLenientArea: String? = null
+
     var connectionResultCallback: ((success: Boolean, errorMessage: String?) -> Unit)? = null
 
     val scoutedLocations: ConcurrentHashMap<Long, NetworkItem> = ConcurrentHashMap()
 
-    var pendingLenientArea: String? = null
+    // -------------------------------------------------------------------------
+    // Coroutine infrastructure
+    // -------------------------------------------------------------------------
 
     val fullyConnected = CompletableDeferred<Unit>()
 
     val waitItemsJob = Job()
-
     val waitItemsScope = CoroutineScope(waitItemsJob + Dispatchers.Default)
 
     val itemMutex = Mutex()
+
+    // -------------------------------------------------------------------------
+    // Initialization
+    // -------------------------------------------------------------------------
 
     fun init() {
         System.setProperty("java.net.preferIPv4Addresses", "true")
@@ -99,6 +118,16 @@ object APClient : Client() {
         pendingAutoConnect = null
     }
 
+    // -------------------------------------------------------------------------
+    // Connection management
+    // -------------------------------------------------------------------------
+
+    fun connect(address: String, slotName: String, password: String? = null) {
+        setName(slotName)
+        if (password != null) setPassword(password)
+        super.connect(address)
+    }
+
     fun swapSaveFiles() {
         for (name in AP_SAVE_FILES) {
             val active = Gdx.files.local("saves/$name")
@@ -108,9 +137,7 @@ object APClient : Client() {
             if (cached.exists()) cached.moveTo(active)
             if (temp.exists()) temp.moveTo(cached)
         }
-        for (dir in AP_MAP_DIRS) {
-            swapMapDirectory(dir)
-        }
+        for (dir in AP_MAP_DIRS) swapMapDirectory(dir)
         FortyFiveLogger.debug(logTag, "swapped save files with APCache")
     }
 
@@ -127,11 +154,9 @@ object APClient : Client() {
         if (temp.exists()) temp.renameTo(cache)
     }
 
-    fun connect(address: String, slotName: String, password: String? = null) {
-        setName(slotName)
-        if (password != null) setPassword(password)
-        super.connect(address)
-    }
+    // -------------------------------------------------------------------------
+    // Archipelago event listeners
+    // -------------------------------------------------------------------------
 
     @ArchipelagoEventListener
     @Suppress("UNCHECKED_CAST")
@@ -164,9 +189,7 @@ object APClient : Client() {
             isArchipelago = true
             val locationIds = ArrayList(ItemsAndLocations.LOCATIONS.values)
             scoutLocations(locationIds)
-            if (firstConnect) {
-                swapSaveFiles()
-            }
+            if (firstConnect) swapSaveFiles()
             PermaSaveState.read()
             SaveState.read()
             UserPrefs.read()
@@ -200,10 +223,43 @@ object APClient : Client() {
     }
 
     @ArchipelagoEventListener
+    fun onItemReceived(event: ReceiveItemEvent) {
+        waitItemsScope.launch {
+            fullyConnected.await()
+            itemMutex.withLock {
+                FortyFiveLogger.debug(logTag, "onItemReceived fired: isArchipelago=$isArchipelago index=${event.index} item=${event.itemName}")
+                if (!isArchipelago) return@launch
+                val index = event.index.toInt()
+                if (index <= PermaSaveState.lastReceivedItemIndex) {
+                    FortyFiveLogger.debug(logTag, "skipping already-processed item at index $index: ${event.itemName}")
+                    return@launch
+                }
+                PermaSaveState.lastReceivedItemIndex = index
+                FortyFiveLogger.debug(logTag, "received item: ${event.itemName} from ${event.playerName} (index $index)")
+                ItemsAndLocations.receiveItem(event.itemName, event.playerName, event.item.flags)
+            }
+        }
+    }
+
+    @ArchipelagoEventListener
     fun onDeathLinkReceived(event: DeathLinkEvent) {
         FortyFiveLogger.debug(logTag, "received death link from ${event.source}: ${event.cause}")
         applyDeathLink()
     }
+
+    @ArchipelagoEventListener
+    fun onPrintJSON(event: PrintJSONEvent) {
+        if (event.type != APPrintJsonType.Goal) return
+        val playerName = slotInfo[event.apPrint.slot]?.name ?: return
+        if (playerName == myName) return
+        Gdx.app.postRunnable {
+            NotificationOverlay.show("\$yellow$$playerName\$yellow$ has finished their goal!")
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Game actions
+    // -------------------------------------------------------------------------
 
     fun sendGoalComplete() {
         setGameState(ClientStatus.CLIENT_GOAL)
@@ -239,34 +295,9 @@ object APClient : Client() {
         FortyFive.newRun(true)
     }
 
-    @ArchipelagoEventListener
-    fun onPrintJSON(event: PrintJSONEvent) {
-        if (event.type != APPrintJsonType.Goal) return
-        val playerName = slotInfo[event.apPrint.slot]?.name ?: return
-        if (playerName == myName) return
-        Gdx.app.postRunnable {
-            NotificationOverlay.show("\$yellow$$playerName\$yellow$ has finished their goal!")
-        }
-    }
-
-    @ArchipelagoEventListener
-    fun onItemReceived(event: ReceiveItemEvent) {
-        waitItemsScope.launch {
-            fullyConnected.await()
-            itemMutex.withLock {
-                FortyFiveLogger.debug(logTag, "onItemReceived fired: isArchipelago=$isArchipelago index=${event.index} item=${event.itemName}")
-                if (!isArchipelago) return@launch
-                val index = event.index.toInt()
-                if (index <= PermaSaveState.lastReceivedItemIndex) {
-                    FortyFiveLogger.debug(logTag, "skipping already-processed item at index $index: ${event.itemName}")
-                    return@launch
-                }
-                PermaSaveState.lastReceivedItemIndex = index
-                FortyFiveLogger.debug(logTag, "received item: ${event.itemName} from ${event.playerName} (index $index)")
-                ItemsAndLocations.receiveItem(event.itemName, event.playerName, event.item.flags)
-            }
-        }
-    }
+    // -------------------------------------------------------------------------
+    // Connection overrides
+    // -------------------------------------------------------------------------
 
     override fun onError(ex: Exception) {
         FortyFiveLogger.warn(logTag, "WebSocket error: ${ex::class.simpleName}: ${ex.message}\n${ex.stackTraceToString()}")
