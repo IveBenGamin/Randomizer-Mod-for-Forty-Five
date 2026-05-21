@@ -42,8 +42,10 @@ object APClient : Client() {
     var pendingAutoConnect: PendingAutoConnect? = null
         private set
 
-    var deathLinkEnabled: Boolean = false
+    var deathLinkMode: Int = 0  // 0 = none, 1 = lenient, 2 = torture
         private set
+
+    val deathLinkEnabled: Boolean get() = deathLinkMode > 0
 
     var obscuredChoices: Boolean = false
         private set
@@ -54,6 +56,8 @@ object APClient : Client() {
     var connectionResultCallback: ((success: Boolean, errorMessage: String?) -> Unit)? = null
 
     val scoutedLocations: ConcurrentHashMap<Long, NetworkItem> = ConcurrentHashMap()
+
+    var pendingLenientArea: String? = null
 
     val fullyConnected = CompletableDeferred<Unit>()
 
@@ -134,12 +138,12 @@ object APClient : Client() {
     fun onConnectionResult(event: ConnectionResultEvent) {
         if (event.result == ConnectionResult.Success) {
             val slotData = event.getSlotData(Map::class.java) as? Map<String, Any>
-            deathLinkEnabled = when (val v = slotData?.get("death_link")) {
-                is Number -> v.toInt() == 1
-                is Boolean -> v
-                else -> false
+            deathLinkMode = when (val v = slotData?.get("death_link")) {
+                is Number -> v.toInt().coerceIn(0, 2)
+                is Boolean -> if (v) 2 else 0
+                else -> 0
             }
-            setDeathLinkEnabled(deathLinkEnabled)
+            setDeathLinkEnabled(deathLinkMode > 0)
             obscuredChoices = when (val v = slotData?.get("obscured_choices")) {
                 is Number -> v.toInt() == 1
                 is Boolean -> v
@@ -219,13 +223,20 @@ object APClient : Client() {
                         action { FortyFive.disableCurrentScreenInput() }
                         include(rp.getFadeToBlackTimeline(2000, stayBlack = true))
                         delay(500)
-                        action { FortyFive.newRun(true) }
+                        action { applyDeathLinkReset() }
                     })
                 } else {
-                    FortyFive.newRun(true)
+                    applyDeathLinkReset()
                 }
             }
         }
+    }
+
+    private fun applyDeathLinkReset() {
+        if (deathLinkMode == 1) {
+            pendingLenientArea = PermaSaveState.visitedAreas.lastOrNull()
+        }
+        FortyFive.newRun(true)
     }
 
     @ArchipelagoEventListener

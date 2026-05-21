@@ -1638,6 +1638,9 @@ class GameController(onj: OnjNamedObject) : ScreenController() {
         action {
             mainTimeline.stopTimeline()
             animTimelines.forEach(Timeline::stopTimeline)
+            if (APClient.deathLinkMode == 1) {
+                APClient.pendingLenientArea = PermaSaveState.visitedAreas.lastOrNull()
+            }
             FortyFive.newRun(true)
         }
     }

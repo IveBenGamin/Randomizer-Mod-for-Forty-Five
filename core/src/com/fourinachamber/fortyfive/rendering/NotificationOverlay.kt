@@ -22,12 +22,12 @@ object NotificationOverlay {
     private const val HIDDEN_X = -400f
 
     private val backgroundDelegate = lazy {
-        Texture(Gdx.files.internal("textures/events/choose_card/cards_background.png"))
+        Texture(Gdx.files.internal("textures/notification_background.png"))
     }
     private val background: Texture by backgroundDelegate
 
     private val foregroundDelegate = lazy {
-        Texture(Gdx.files.internal("textures/notification_foreground.png"))
+        Texture(Gdx.files.internal("textures/events/choose_card/cards_background.png"))
     }
     private val foreground: Texture by foregroundDelegate
 

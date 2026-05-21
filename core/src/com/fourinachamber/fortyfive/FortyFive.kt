@@ -76,7 +76,11 @@ object FortyFive : Game() {
     }
 
     fun changeToInitialScreen() {
-        if (!SaveState.playerCompletedFirstTutorialEncounter) {
+        val lenientArea = APClient.pendingLenientArea
+        if (lenientArea != null) {
+            APClient.pendingLenientArea = null
+            MapManager.changeToMap(lenientArea)
+        } else if (!SaveState.playerCompletedFirstTutorialEncounter) {
             MapManager.changeToEncounterScreen(tutorialEncounterContext)
         } else {
             MapManager.changeToMapScreen()
